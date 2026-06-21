@@ -1,0 +1,165 @@
+/* =========================
+AUTH PAGE
+========================= */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
+}
+
+body{
+background:#f4f7fb;
+}
+
+.auth-container{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  background:#f4f7fb;
+}
+
+.auth-card{
+width:100%;
+max-width:450px;
+background:#fff;
+border-radius:20px;
+padding:35px;
+box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+
+.auth-header{
+text-align:center;
+margin-bottom:30px;
+}
+
+.auth-icon{
+font-size:55px;
+color:#0d6efd;
+}
+
+.auth-header h2{
+margin-top:10px;
+font-weight:700;
+}
+
+.auth-header p{
+color:#777;
+}
+
+.form-group{
+margin-bottom:20px;
+}
+
+.form-group label{
+display:block;
+margin-bottom:8px;
+font-weight:600;
+color:#555;
+}
+
+.input-box{
+position:relative;
+}
+
+.input-box i{
+position:absolute;
+left:15px;
+top:50%;
+transform:translateY(-50%);
+color:#0d6efd;
+}
+
+.form-control{
+width:100%;
+padding:14px 14px 14px 45px;
+border:2px solid #e6e6e6;
+border-radius:12px;
+font-size:15px;
+}
+
+.form-control:focus{
+outline:none;
+border-color:#0d6efd;
+box-shadow:none;
+}
+
+.auth-options{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+font-size:14px;
+}
+
+.auth-options a{
+text-decoration:none;
+color:#0d6efd;
+font-weight:600;
+}
+
+.login-btn,
+.register-btn{
+width:100%;
+border:none;
+background:#0d6efd;
+color:#fff;
+padding:14px;
+border-radius:12px;
+font-size:16px;
+font-weight:600;
+transition:.3s;
+}
+
+.login-btn:hover,
+.register-btn:hover{
+background:#0b5ed7;
+transform:translateY(-2px);
+}
+
+.auth-footer{
+text-align:center;
+margin-top:20px;
+color:#666;
+}
+
+.auth-footer a{
+color:#0d6efd;
+text-decoration:none;
+font-weight:600;
+}
+
+/* =========================
+MOBILE
+========================= */
+
+@media(max-width:768px){
+
+.auth-card{
+padding:25px;
+}
+
+.auth-header h2{
+font-size:24px;
+}
+
+}
+
+@media(max-width:480px){
+
+.auth-card{
+padding:20px;
+}
+
+.auth-icon{
+font-size:45px;
+}
+
+.auth-header h2{
+font-size:22px;
+}
+
+}

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -8,14 +8,21 @@ import { RouterLink } from '@angular/router';
   templateUrl: './customer-dashboard.html',
   styleUrls: ['./customer-dashboard.css']
 })
-export class CustomerDashboardComponent {
+export class CustomerDashboardComponent implements OnInit {
 
-  customerName = 'Anusiya';
+  customerName = '';
 
   isSidebarOpen = false;
 
   /* ACTIVE MENU */
   selectedMenu = 'dashboard';
+
+  ngOnInit(): void {
+
+    this.customerName =
+      localStorage.getItem('customerName') || 'Customer';
+
+  }
 
   toggleSidebar() {
     this.isSidebarOpen = !this.isSidebarOpen;
