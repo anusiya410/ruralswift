@@ -5,11 +5,11 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 
-const createTables  = require('./schema');
-const authRoutes    = require('./routes/auth');
+const createTables = require('./schema');
+const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─────────────────────────────────────────────
@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 // ─────────────────────────────────────────────
 // Routes
 // ─────────────────────────────────────────────
-app.use('/api/auth',    authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 
 // Health check endpoint
