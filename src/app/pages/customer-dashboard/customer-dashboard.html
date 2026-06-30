@@ -14,7 +14,7 @@
 
     <!-- Back Button -->
     <div class="p-4 border-b border-gray-50">
-      <a routerLink="/" class="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors w-full p-2 rounded-lg hover:bg-blue-50 cursor-pointer no-underline">
+      <a routerLink="/" class="flex items-center gap-2 text-sm text-gray-500 hover:text-[#0B4A9E] transition-colors w-full p-2 rounded-lg hover:bg-blue-50/50 cursor-pointer no-underline">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
         Back to Home
       </a>
@@ -22,7 +22,7 @@
 
     <!-- Profile Info -->
     <div class="flex flex-col items-center pt-8 pb-6 px-4">
-      <div class="w-20 h-20 rounded-full bg-blue-500 text-white flex items-center justify-center mb-4 shadow-md shadow-blue-200">
+      <div class="w-20 h-20 rounded-full bg-[#0B4A9E] text-white flex items-center justify-center mb-4 shadow-md shadow-blue-100">
         <i data-lucide="user" class="w-10 h-10"></i>
       </div>
       <h2 class="text-xl font-bold text-gray-900">{{ customerName }}</h2>
@@ -34,7 +34,7 @@
 
       <button (click)="setSection('dashboard')"
         [ngClass]="selectedSection === 'dashboard'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
@@ -43,7 +43,7 @@
 
       <button (click)="setSection('orders')"
         [ngClass]="selectedSection === 'orders'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="package" class="w-5 h-5"></i>
@@ -52,7 +52,7 @@
 
       <button (click)="setSection('track')"
         [ngClass]="selectedSection === 'track'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="truck" class="w-5 h-5"></i>
@@ -68,7 +68,7 @@
 
       <button (click)="setSection('address')"
         [ngClass]="selectedSection === 'address'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="map-pin" class="w-5 h-5"></i>
@@ -77,7 +77,7 @@
 
       <button (click)="setSection('wishlist')"
         [ngClass]="selectedSection === 'wishlist'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="heart" class="w-5 h-5"></i>
@@ -86,7 +86,7 @@
 
       <button (click)="setSection('feedback')"
         [ngClass]="selectedSection === 'feedback'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="message-square" class="w-5 h-5"></i>
@@ -95,7 +95,7 @@
 
       <button (click)="setSection('settings')"
         [ngClass]="selectedSection === 'settings'
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+          ? 'bg-[#0B4A9E] text-white shadow-sm shadow-blue-100'
           : 'text-gray-600 hover:bg-gray-50'"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors">
         <i data-lucide="settings" class="w-5 h-5"></i>
@@ -121,7 +121,7 @@
     <div id="section-dashboard" [style.display]="selectedSection === 'dashboard' ? 'block' : 'none'" class="pb-10">
 
       <!-- Welcome Banner -->
-      <div class="bg-gradient-to-r from-[#0d6efd] to-[#0f9d58] rounded-3xl p-8 mb-6 shadow-sm text-white">
+      <div class="bg-gradient-to-r from-[#0B4A9E] to-[#10B981] rounded-3xl p-8 mb-6 shadow-sm text-white">
         <h1 class="text-3xl font-bold mb-2">Welcome Back, <span class="text-yellow-400">{{ customerName }}</span></h1>
         <p class="text-white/80">Manage your orders, deliveries and account.</p>
       </div>
@@ -167,15 +167,15 @@
       <div class="mb-8">
         <h3 class="text-lg font-bold text-gray-900 mb-4 px-1">Quick Actions</h3>
         <div class="flex flex-wrap gap-3">
-          <button class="bg-[#0f9d58] hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm">
+          <a routerLink="/products" class="bg-[#10B981] hover:bg-[#059669] text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm no-underline">
             <i data-lucide="shopping-bag" class="w-4 h-4"></i>
             Shop Now
-          </button>
-          <button class="bg-[#0d6efd] hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm">
+          </a>
+          <a routerLink="/order-tracking" class="bg-[#0B4A9E] hover:bg-[#093B80] text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm no-underline">
             <i data-lucide="truck" class="w-4 h-4"></i>
             Track Order
-          </button>
-          <button class="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm">
+          </a>
+          <button (click)="setSection('wishlist')" class="bg-[#10B981] hover:bg-[#059669] text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm">
             <i data-lucide="heart" class="w-4 h-4"></i>
             Wishlist
           </button>
@@ -293,7 +293,7 @@
             <button
               type="submit"
               [disabled]="profileSaving"
-              class="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2">
+              class="px-6 py-3 rounded-xl bg-[#0B4A9E] hover:bg-[#093B80] text-white font-medium transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2">
               <span *ngIf="profileSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
               {{ profileSaving ? 'Saving...' : 'Save Changes' }}
             </button>
@@ -305,70 +305,149 @@
 
     <!-- ========== ORDERS VIEW ========== -->
     <div id="section-orders" [style.display]="selectedSection === 'orders' ? 'block' : 'none'" class="pb-10">
-      <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
 
-        <div class="flex flex-wrap items-center justify-between mb-8 gap-4 border-b border-gray-100 pb-4">
+      <!-- Header -->
+      <div class="bg-white rounded-3xl px-8 py-6 shadow-sm border border-gray-100 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-bold text-gray-900">Order History</h2>
-            <p class="text-gray-500 text-sm mt-1">Track, return or purchase items again.</p>
+            <h2 class="text-2xl font-bold text-gray-900">My Orders</h2>
+            <p class="text-gray-500 text-sm mt-1">{{ ordersList.length }} orders placed · Track, return, or buy again.</p>
           </div>
           <div class="relative">
             <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-            <input type="text" placeholder="Search orders..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none text-sm w-64">
+            <input type="text" [(ngModel)]="orderSearchQuery" name="orderSearch"
+              placeholder="Search by order ID, item or status..."
+              class="pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none text-sm w-72">
           </div>
-        </div>
-
-        <div class="space-y-4">
-
-          <div class="border border-gray-100 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all bg-gray-50/50">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-                  <i data-lucide="package" class="w-6 h-6"></i>
-                </div>
-                <div>
-                  <p class="font-bold text-gray-900">Order #RS-84729</p>
-                  <p class="text-sm text-gray-500">Placed on Oct 24, 2026</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-6">
-                <div class="text-right hidden sm:block">
-                  <p class="font-bold text-gray-900">₹1,240.00</p>
-                  <p class="text-sm text-green-600 font-medium">Delivered</p>
-                </div>
-                <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">View Details</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="border border-gray-100 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all bg-gray-50/50">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center">
-                  <i data-lucide="truck" class="w-6 h-6"></i>
-                </div>
-                <div>
-                  <p class="font-bold text-gray-900">Order #RS-99210</p>
-                  <p class="text-sm text-gray-500">Placed on Nov 12, 2026</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-6">
-                <div class="text-right hidden sm:block">
-                  <p class="font-bold text-gray-900">₹850.00</p>
-                  <p class="text-sm text-yellow-600 font-medium">In Transit</p>
-                </div>
-                <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">Track Order</button>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredOrders.length === 0" class="bg-white rounded-3xl p-12 shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center">
+        <div class="w-20 h-20 bg-blue-50 text-blue-400 rounded-3xl flex items-center justify-center mb-5">
+          <i data-lucide="package" class="w-10 h-10"></i>
+        </div>
+        <h4 class="text-xl font-bold text-gray-800 mb-2">No Orders Found</h4>
+        <p class="text-gray-400 text-sm mb-6">Try a different search, or shop for something new.</p>
+        <a routerLink="/products" class="bg-[#10B981] hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium no-underline transition-colors">Shop Now</a>
+      </div>
+
+      <!-- Order Cards -->
+      <div class="space-y-4" *ngIf="filteredOrders.length > 0">
+        <div *ngFor="let order of filteredOrders"
+          class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:border-blue-200 hover:shadow-md transition-all">
+
+          <!-- Order Header Bar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-gray-50/70 border-b border-gray-100">
+            <div class="flex items-center gap-6 flex-wrap">
+              <!-- Status Icon + Chip -->
+              <div [ngClass]="getStatusColor(order.status)"
+                class="order-status-chip flex items-center gap-1.5">
+                <i [attr.data-lucide]="getStatusIcon(order.status)" class="w-3.5 h-3.5"></i>
+                {{ order.status }}
+              </div>
+              <span class="text-sm font-bold text-gray-800"># {{ order.id }}</span>
+              <span class="text-sm text-gray-400">Placed: {{ order.date }}</span>
+            </div>
+            <div class="flex items-center gap-6">
+              <div class="text-right">
+                <p class="text-xs text-gray-400">Est. Delivery</p>
+                <p class="text-sm font-semibold text-gray-700">{{ order.estimatedDelivery }}</p>
+              </div>
+              <p class="text-lg font-bold text-gray-900">₹{{ order.total.toLocaleString('en-IN') }}</p>
+            </div>
+          </div>
+
+          <!-- Items Row -->
+          <div class="px-6 py-5">
+            <div class="flex items-center gap-4 mb-5 overflow-x-auto pb-1">
+              <div *ngFor="let item of order.items" class="flex items-center gap-3 shrink-0 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+                <img [src]="item.image" [alt]="item.name" class="w-12 h-12 rounded-xl object-cover border border-gray-200" />
+                <div>
+                  <p class="text-sm font-semibold text-gray-800 whitespace-nowrap">{{ item.name }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Qty: {{ item.qty }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3 flex-wrap">
+              <button class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1.5">
+                <i data-lucide="receipt-text" class="w-4 h-4"></i> View Invoice
+              </button>
+              <a *ngIf="order.status === 'Shipped' || order.status === 'Out for Delivery'"
+                routerLink="/order-tracking"
+                class="px-5 py-2.5 bg-[#0B4A9E] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold no-underline transition-colors flex items-center gap-1.5">
+                <i data-lucide="truck" class="w-4 h-4"></i> Track Order
+              </a>
+              <button *ngIf="order.status === 'Delivered'"
+                class="px-5 py-2.5 bg-[#10B981] hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Buy Again
+              </button>
+              <button *ngIf="order.status === 'Delivered'"
+                class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors flex items-center gap-1.5">
+                <i data-lucide="undo-2" class="w-4 h-4"></i> Return / Refund
+              </button>
+              <button *ngIf="order.status !== 'Delivered' && order.status !== 'Cancelled'"
+                class="px-5 py-2.5 bg-white border border-red-200 text-red-500 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors flex items-center gap-1.5">
+                <i data-lucide="x-circle" class="w-4 h-4"></i> Cancel Order
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========== TRACK ORDERS VIEW ========== -->
+    <div id="section-track" [style.display]="selectedSection === 'track' ? 'block' : 'none'" class="pb-10">
+      <div class="bg-white rounded-3xl px-8 py-6 shadow-sm border border-gray-100 mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">Track Orders</h2>
+        <p class="text-gray-500 text-sm mt-1">Enter your Order ID below or pick an active order to track live status.</p>
+      </div>
+
+      <!-- Quick track from active orders -->
+      <div class="space-y-4 mb-8">
+        <ng-container *ngFor="let order of ordersList">
+          <div *ngIf="order.status === 'Shipped' || order.status === 'Out for Delivery' || order.status === 'Packed' || order.status === 'Confirmed'"
+            class="bg-white rounded-3xl shadow-sm border border-gray-100 px-6 py-5 flex flex-wrap items-center justify-between gap-4 hover:border-blue-200 hover:shadow-md transition-all">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="truck" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <p class="font-bold text-gray-900"># {{ order.id }}</p>
+                <p class="text-sm text-gray-500">{{ order.items.length }} item(s) · Placed {{ order.date }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div [ngClass]="getStatusColor(order.status)" class="order-status-chip flex items-center gap-1.5">
+                <i [attr.data-lucide]="getStatusIcon(order.status)" class="w-3.5 h-3.5"></i>
+                {{ order.status }}
+              </div>
+              <a routerLink="/order-tracking"
+                class="px-5 py-2.5 bg-[#0B4A9E] hover:bg-blue-800 text-white rounded-xl text-sm font-bold no-underline transition-colors flex items-center gap-1.5">
+                <i data-lucide="map-pin" class="w-4 h-4"></i> Live Track
+              </a>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- No active orders message -->
+      <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4">
+        <i data-lucide="info" class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"></i>
+        <div>
+          <p class="text-sm font-semibold text-blue-800">Need detailed tracking?</p>
+          <p class="text-sm text-blue-600 mt-1">Visit the <a routerLink="/order-tracking" class="font-bold underline">Order Tracking page</a> to enter any Order ID and see the full delivery timeline.</p>
+        </div>
+      </div>
+
     </div>
 
     <!-- ========== BLANK / UNDER CONSTRUCTION VIEW ========== -->
     <div id="section-blank"
-      [style.display]="(selectedSection !== 'dashboard' && selectedSection !== 'profile' && selectedSection !== 'orders') ? 'flex' : 'none'"
+      [style.display]="(selectedSection !== 'dashboard' && selectedSection !== 'profile' && selectedSection !== 'orders' && selectedSection !== 'track') ? 'flex' : 'none'"
       class="h-full pb-10 flex-col items-center justify-center">
       <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center text-center min-h-96">
         <div class="w-20 h-20 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mb-6">

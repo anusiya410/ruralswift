@@ -1,2 +1,44 @@
 /* All styles handled by Tailwind CSS utility classes.
    Component uses the Tailwind CDN loaded in index.html. */
+
+/* ── Order Status Chips ─────────────────────────── */
+/* Dynamic [ngClass] classes must be defined statically here,
+   otherwise Tailwind purge will remove them. */
+.order-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.status-delivered {
+  background: #DCFCE7;
+  color: #059669;
+}
+
+.status-shipped {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.status-out {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.status-processing {
+  background: #F3E8FF;
+  color: #7C3AED;
+}
+
+.status-cancelled {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+/* ── No-underline anchor resets ─────────────────── */
+.no-underline { text-decoration: none !important; }

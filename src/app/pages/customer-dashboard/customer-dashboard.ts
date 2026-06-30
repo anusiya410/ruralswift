@@ -1,11 +1,26 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, UserProfile } from '../../services/api.service';
 
 declare const lucide: any;
 declare const gsap: any;
+
+export interface OrderItem {
+  name: string;
+  qty: number;
+  image: string;
+}
+
+export interface Order {
+  id: string;
+  date: string;
+  total: number;
+  status: 'Placed' | 'Confirmed' | 'Packed' | 'Shipped' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
+  estimatedDelivery: string;
+  items: OrderItem[];
+}
 
 @Component({
   selector: 'app-customer-dashboard',
@@ -18,6 +33,7 @@ export class CustomerDashboardComponent implements OnInit, AfterViewInit {
 
   customerName = '';
   selectedSection = 'dashboard';
+  orderSearchQuery = '';
 
   // Profile form model
   profileForm: UserProfile = {
@@ -34,16 +50,95 @@ export class CustomerDashboardComponent implements OnInit, AfterViewInit {
   toastType: 'success' | 'error' = 'success';
   showToast = false;
 
-  constructor(private api: ApiService, private router: Router) {}
+  // ── Mock Orders Data ──────────────────────────────────────
+  ordersList: Order[] = [
+    {
+      id: 'ORD12345',
+      date: '10 Jun 2026',
+      total: 620,
+      status: 'Shipped',
+      estimatedDelivery: '12 Jun 2026',
+      items: [
+        { name: 'Herbal Cough Syrup 100ml', qty: 1, image: 'https://placehold.co/64x64/dcfce7/1f2937?text=Syrup' },
+        { name: 'Premium Rice 5kg',          qty: 1, image: 'https://placehold.co/64x64/fef9c3/1f2937?text=Rice' },
+        { name: 'Water Bottle 1L',           qty: 2, image: 'https://placehold.co/64x64/dbeafe/1f2937?text=Bottle' }
+      ]
+    },
+    {
+      id: 'ORD09876',
+      date: '25 May 2026',
+      total: 1450,
+      status: 'Delivered',
+      estimatedDelivery: '28 May 2026',
+      items: [
+        { name: 'Neem Fertilizer 1kg',       qty: 2, image: 'https://placehold.co/64x64/d1fae5/1f2937?text=Fertilizer' },
+        { name: 'LED Solar Lantern',          qty: 1, image: 'https://placehold.co/64x64/ede9fe/1f2937?text=Lantern' }
+      ]
+    },
+    {
+      id: 'ORD07431',
+      date: '10 May 2026',
+      total: 380,
+      status: 'Delivered',
+      estimatedDelivery: '13 May 2026',
+      items: [
+        { name: 'Ayurvedic Pain Balm',       qty: 3, image: 'https://placehold.co/64x64/fee2e2/1f2937?text=Balm' }
+      ]
+    },
+    {
+      id: 'ORD06112',
+      date: '02 Apr 2026',
+      total: 210,
+      status: 'Cancelled',
+      estimatedDelivery: '05 Apr 2026',
+      items: [
+        { name: 'Wheat Flour 2kg',           qty: 1, image: 'https://placehold.co/64x64/fef3c7/1f2937?text=Flour' }
+      ]
+    }
+  ];
+
+  get filteredOrders(): Order[] {
+    const q = this.orderSearchQuery.toLowerCase().trim();
+    if (!q) return this.ordersList;
+    return this.ordersList.filter(o =>
+      o.id.toLowerCase().includes(q) ||
+      o.status.toLowerCase().includes(q) ||
+      o.items.some(i => i.name.toLowerCase().includes(q))
+    );
+  }
+
+  getStatusColor(status: string): string {
+    switch (status) {
+      case 'Delivered':        return 'status-delivered';
+      case 'Shipped':          return 'status-shipped';
+      case 'Out for Delivery': return 'status-out';
+      case 'Packed':
+      case 'Confirmed':
+      case 'Placed':           return 'status-processing';
+      case 'Cancelled':        return 'status-cancelled';
+      default:                 return 'status-processing';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'Delivered':        return 'check-circle';
+      case 'Shipped':          return 'truck';
+      case 'Out for Delivery': return 'map-pin';
+      case 'Cancelled':        return 'x-circle';
+      default:                 return 'package';
+    }
+  }
+
+  constructor(private api: ApiService, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    // ── Auth Guard: redirect to login if no token ──
+    // ── Auth Guard ──
     if (!this.api.getToken()) {
       this.router.navigate(['/login']);
       return;
     }
 
-    // Load from localStorage immediately (instant render)
     const stored = this.api.getStoredUser();
     if (stored) {
       this.customerName = stored.first_name || stored.email || 'Customer';
@@ -51,16 +146,20 @@ export class CustomerDashboardComponent implements OnInit, AfterViewInit {
     } else {
       this.customerName = localStorage.getItem('customerName') || 'Customer';
     }
+
+    // Deep-link via query param ?section=orders
+    this.route.queryParams.subscribe(params => {
+      if (params['section']) {
+        this.setSection(params['section']);
+      }
+    });
   }
 
   ngAfterViewInit(): void {
     setTimeout(() => {
       lucide.createIcons();
       gsap.from('#section-dashboard', {
-        opacity: 0,
-        y: 20,
-        duration: 0.6,
-        ease: 'power3.out'
+        opacity: 0, y: 20, duration: 0.6, ease: 'power3.out'
       });
     }, 50);
   }
@@ -68,16 +167,12 @@ export class CustomerDashboardComponent implements OnInit, AfterViewInit {
   setSection(section: string): void {
     this.selectedSection = section;
 
-    // Fetch fresh profile from API when opening profile section
-    if (section === 'profile') {
-      this.loadProfile();
-    }
+    if (section === 'profile') { this.loadProfile(); }
 
+    const knownSections = ['dashboard', 'profile', 'orders', 'track', 'address', 'wishlist', 'feedback', 'settings'];
     setTimeout(() => {
       lucide.createIcons();
-      const sectionId = ['dashboard', 'profile', 'orders'].includes(section)
-        ? `section-${section}`
-        : 'section-blank';
+      const sectionId = knownSections.includes(section) ? `section-${section}` : 'section-blank';
       const el = document.getElementById(sectionId);
       if (el) {
         gsap.fromTo(el,
