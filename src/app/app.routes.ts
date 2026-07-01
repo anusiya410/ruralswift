@@ -9,11 +9,13 @@ import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password
 
 import { ProductListingComponent } from './pages/product-listing/product-listing';
 import { ProductDetailsComponent } from './pages/product-details/product-details';
+import { CartComponent } from './pages/cart/cart';
+import { OrderTrackingComponent } from './pages/order-tracking/order-tracking';
+import { SellerHubComponent } from './pages/seller-hub/seller-hub';
 
 export const routes: Routes = [
 
   { path: '', redirectTo: 'home', pathMatch: 'full' },
-  
 
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
@@ -27,12 +29,18 @@ export const routes: Routes = [
     component: ProductDetailsComponent
   },
 
+  { path: 'cart', component: CartComponent },
+
+  { path: 'order-tracking', component: OrderTrackingComponent },
+
+  { path: 'seller-hub', component: SellerHubComponent },
+
   { path: 'dashboard', component: CustomerDashboardComponent },
 
   { path: 'profile', component: ProfileComponent },
 
   { path: 'forgot-password', component: ForgotPasswordComponent },
 
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'home' }
 
 ];

@@ -123,7 +123,7 @@
         PRODUCT DETAILS
 ========================================== -->
 
-<section class="container py-5">
+<section class="container py-5" *ngIf="product">
 
     <div class="row g-5">
 
@@ -137,7 +137,7 @@
 
                 
                     <img
-    [src]="product.image"
+    [src]="product.image_url"
     class="img-fluid rounded-4 product-main-img"
     [alt]="product.name">
             </div>
@@ -223,15 +223,15 @@
                     <small
                         class="text-decoration-line-through text-muted ms-2">
 
-                        ₹{{ product.oldPrice }}
+                        ₹{{ product.mrp }}
 
                     </small>
 
                 </h2>
 
-                <span class="badge bg-danger">
+                <span class="badge bg-danger" *ngIf="getDiscount(product.price, product.mrp) > 0">
 
-                    {{ product.offer }}
+                    {{ getDiscount(product.price, product.mrp) }}% OFF
 
                 </span>
 

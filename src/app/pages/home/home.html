@@ -1,170 +1,149 @@
+<app-navbar></app-navbar>
 
-<!-- HEADER -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary px-3">
+<!-- ===========================
+     MAIN CONTENT
+     =========================== -->
+<main class="main-content has-bottom-nav">
 
-  <a class="navbar-brand d-flex align-items-center" href="#">
-    <img src="logo.png" alt="RuralSwift Logo" class="logo-img">
-  </a>
+  <!-- HERO CAROUSEL -->
+  <div class="hero-carousel">
+    <div
+      *ngFor="let slide of heroSlides; let i = index"
+      class="hero-slide"
+      [ngClass]="{ 'hero-slide--active': currentSlide === i }"
+    >
+      <img [src]="slide.image" [alt]="slide.alt" class="hero-slide-img" />
+      <div class="hero-fade-gradient"></div>
+    </div>
 
-  <div class="flex-grow-1 mx-3 search-container">
-    <i data-lucide="search" class="search-icon"></i>
-    <input
-      type="text"
-      class="form-control rounded-pill search-input"
-      placeholder="Search by keyword or Product ID">
-  </div>
-
-  <div class="d-flex gap-3 text-white header-icons">
-    <button class="icon-btn" aria-label="Wishlist">
-      <i data-lucide="heart" class="heart-icon"></i>
+    <!-- Prev / Next Controls -->
+    <button class="carousel-btn carousel-btn--prev" (click)="prevSlide()" aria-label="Previous slide">
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
     </button>
-    <button class="icon-btn" aria-label="Cart">
-      <i data-lucide="shopping-cart" class="cart-icon"></i>
+    <button class="carousel-btn carousel-btn--next" (click)="nextSlide()" aria-label="Next slide">
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m9 18 6-6-6-6"/>
+      </svg>
     </button>
+
+    <!-- Dot indicators -->
+    <div class="carousel-dots">
+      <button
+        *ngFor="let slide of heroSlides; let i = index"
+        class="carousel-dot"
+        [ngClass]="{ 'carousel-dot--active': currentSlide === i }"
+        (click)="goToSlide(i)"
+        [attr.aria-label]="'Go to slide ' + (i + 1)"
+      ></button>
+    </div>
   </div>
 
-</nav>
-
-
-<!-- HERO SECTION -->
-<section class="container-fluid hero-section">
-
-  <div class="row align-items-center">
-
-    <!-- LEFT CONTENT -->
-    <div class="col-lg-6 col-md-12 hero-content">
-
-      <h1 class="hero-title">
-        Fast Delivery To <br>
-        Every Village
-      </h1>
-
-      <div class="hero-badges mt-4">
-        <span class="badge-pill">
-          <i data-lucide="cpu" class="badge-icon"></i>
-          AI Powered Route Optimization
-        </span>
-        <span class="badge-pill">
-          <i data-lucide="shield-check" class="badge-icon"></i>
-          Urgent &amp; Secure Delivery
-        </span>
+  <!-- CATEGORY CARDS -->
+  <div class="category-grid">
+    <div
+      *ngFor="let card of categoryCards"
+      class="category-card"
+      [routerLink]="['/products']"
+    >
+      <h2 class="category-card__title">{{ card.title }}</h2>
+      <div class="category-card__img-wrap">
+        <img [src]="card.img" [alt]="card.title" class="category-card__img" />
       </div>
-
-      <div class="mt-4 hero-buttons">
-
-        <button
-  class="btn shop-btn"
-  routerLink="/products">
-
-  <i data-lucide="shopping-bag" class="btn-icon"></i>
-  Shop Now
-
-</button>
-
-        <button class="btn track-btn">
-          <i data-lucide="map-pin" class="btn-icon"></i>
-          Track Order
-        </button>
-
-      </div>
-
+      <a class="category-card__link">{{ card.link }}</a>
     </div>
-
-    <!-- RIGHT IMAGE -->
-    <div class="col-lg-6 col-md-12 text-center">
-
-      <img
-        src="delivery.jpeg"
-        class="img-fluid hero-img"
-        alt="Delivery">
-
-    </div>
-
   </div>
 
-</section>
-
-
-<!-- SERVICES -->
-<section class="services-section">
-
-  <div class="services-container">
-
-    <h2 class="section-title">Our Services</h2>
-    <p class="section-subtitle">Bringing commerce to every corner of rural India</p>
-
-    <div class="services-grid">
-
-      <div class="service-card">
-        <div class="service-icon-wrap">
-          <i data-lucide="package" class="service-lucide-icon"></i>
-        </div>
-        <h5>Parcel Delivery</h5>
-        <p>Fast parcel delivery to every village.</p>
+  <!-- HORIZONTAL SCROLL PRODUCT ROW -->
+  <div class="product-row-section">
+    <div class="product-row-card">
+      <div class="product-row-header">
+        <h2 class="product-row-title">Related to items you've viewed</h2>
+        <a routerLink="/products" class="product-row-see-more">See more</a>
       </div>
-
-      <div class="service-card">
-        <div class="service-icon-wrap urgent">
-          <i data-lucide="zap" class="service-lucide-icon"></i>
+      <div class="product-scroll-track">
+        <div
+          *ngFor="let imgUrl of productImages; let i = index"
+          class="product-scroll-item"
+          [routerLink]="['/products']"
+        >
+          <div class="product-img-wrap">
+            <img
+              [src]="imgUrl"
+              [alt]="'Product ' + (i + 1)"
+              class="product-scroll-img"
+              (error)="fallbackImg($event)"
+            />
+          </div>
+          <div class="product-badge">Up to 30% off</div>
+          <div class="product-label">RuralSwift Deals</div>
         </div>
-        <h5>Urgent Delivery</h5>
-        <p>Priority delivery for emergency needs.</p>
       </div>
-
-      <div class="service-card">
-        <div class="service-icon-wrap route">
-          <i data-lucide="route" class="service-lucide-icon"></i>
-        </div>
-        <h5>Route Optimization</h5>
-        <p>AI selects the fastest delivery route.</p>
-      </div>
-
-      <div class="service-card">
-        <div class="service-icon-wrap postal">
-          <i data-lucide="building-2" class="service-lucide-icon"></i>
-        </div>
-        <h5>Postal Office Pickup</h5>
-        <p>Collect from nearby postal offices.</p>
-      </div>
-
     </div>
-
   </div>
 
-</section>
+  <!-- SERVICES SECTION -->
+  <section class="services-section">
+    <div class="services-container">
+      <h2 class="section-title">Our Services</h2>
+      <p class="section-subtitle">Bringing commerce to every corner of rural India</p>
+      <div class="services-grid">
 
-<!-- FOOTER NAV -->
-<div class="bottom-nav">
+        <div class="service-card">
+          <div class="service-icon-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16.5 9.4 7.55 4.24"/>
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.29 7 12 12 20.71 7"/>
+              <line x1="12" x2="12" y1="22" y2="12"/>
+            </svg>
+          </div>
+          <h5>Parcel Delivery</h5>
+          <p>Fast parcel delivery to every village.</p>
+        </div>
 
-  <a
-    routerLink="/"
-    routerLinkActive="active-nav"
-    [routerLinkActiveOptions]="{ exact: true }"
-    class="nav-item">
+        <div class="service-card">
+          <div class="service-icon-wrap urgent">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="#f57c00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <h5>Urgent Delivery</h5>
+          <p>Priority delivery for emergency needs.</p>
+        </div>
 
-    <i data-lucide="home" class="nav-lucide-icon"></i>
-    <span>Home</span>
+        <div class="service-card">
+          <div class="service-icon-wrap route">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="#388e3c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="19" r="3"/>
+              <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/>
+              <circle cx="18" cy="5" r="3"/>
+            </svg>
+          </div>
+          <h5>Route Optimization</h5>
+          <p>AI selects the fastest delivery route.</p>
+        </div>
 
-  </a>
+        <div class="service-card">
+          <div class="service-icon-wrap postal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="#c62828" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 22V12H3l9-9 9 9h-3v10H6z"/>
+              <path d="M9 22V18h6v4"/>
+            </svg>
+          </div>
+          <h5>Postal Office Pickup</h5>
+          <p>Collect from nearby postal offices.</p>
+        </div>
 
-  <a class="nav-item">
-    <i data-lucide="grid-2x2" class="nav-lucide-icon"></i>
-    <span>Categories</span>
-  </a>
+      </div>
+    </div>
+  </section>
 
-  <a class="nav-item">
-    <i data-lucide="package" class="nav-lucide-icon"></i>
-    <span>Orders</span>
-  </a>
-
-  <a
-    routerLink="/dashboard"
-    routerLinkActive="active-nav"
-    class="nav-item">
-
-    <i data-lucide="user-circle" class="nav-lucide-icon"></i>
-    <span>Account</span>
-
-  </a>
-
-</div>
+</main>
