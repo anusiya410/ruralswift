@@ -1,8 +1,9 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, HostListener } from '@angular/core';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, UserProfile } from '../../services/api.service';
+import { NavbarComponent } from '../../components/navbar/navbar';
 
 declare const lucide: any;
 declare const gsap: any;
@@ -25,7 +26,7 @@ export interface Order {
 @Component({
   selector: 'app-customer-dashboard',
   standalone: true,
-  imports: [RouterLink, NgClass, CommonModule, FormsModule],
+  imports: [RouterLink, NgClass, CommonModule, FormsModule, NavbarComponent],
   templateUrl: './customer-dashboard.html',
   styleUrls: ['./customer-dashboard.css']
 })
@@ -34,6 +35,20 @@ export class CustomerDashboardComponent implements OnInit, AfterViewInit {
   customerName = '';
   selectedSection = 'dashboard';
   orderSearchQuery = '';
+  sidebarOpen = false;
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    document.body.style.overflow = this.sidebarOpen ? 'hidden' : '';
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void { this.closeSidebar(); }
 
   // Profile form model
   profileForm: UserProfile = {

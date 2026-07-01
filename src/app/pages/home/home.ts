@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgFor, NgClass } from '@angular/common';
+import { NavbarComponent } from '../../components/navbar/navbar';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, NgFor, NgClass],
+  imports: [RouterLink, RouterLinkActive, NgFor, NgClass, NavbarComponent],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })

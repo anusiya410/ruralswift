@@ -1,44 +1,96 @@
-/* All styles handled by Tailwind CSS utility classes.
-   Component uses the Tailwind CDN loaded in index.html. */
+/* ============================================================
+   CUSTOMER DASHBOARD — RuralSwift
+   ============================================================ */
 
-/* ── Order Status Chips ─────────────────────────── */
-/* Dynamic [ngClass] classes must be defined statically here,
-   otherwise Tailwind purge will remove them. */
-.order-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 12px;
+/* ── Toast ───────────────────────────────────────────────────── */
+.dash-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 600;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-family, 'Poppins', sans-serif);
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.15));
+  animation: slideInUp 0.3s ease;
+}
+.toast-success { background: #166534; color: #fff; }
+.toast-error   { background: #991b1b; color: #fff; }
+
+@keyframes slideInUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Main Layout ─────────────────────────────────────────────── */
+.dash-wrapper {
+  display: flex;
+  height: calc(100vh - 62px);   /* subtract navbar */
+  overflow: hidden;
+  background: var(--surface-bg, #f1f5f9);
+  padding: 16px;
+  gap: 16px;
+  font-family: var(--font-family, 'Poppins', sans-serif);
+}
+
+@media (min-width: 768px) {
+  .dash-wrapper { padding: 24px; gap: 20px; }
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.dash-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.52);
+  backdrop-filter: blur(3px);
+  z-index: calc(var(--z-sidebar, 300) - 1);
+}
+
+.dash-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--surface-card, #fff);
   border-radius: 20px;
-  white-space: nowrap;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(11,74,158,0.08));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.status-delivered {
-  background: #DCFCE7;
-  color: #059669;
+@media (max-width: 767px) {
+  .dash-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    border-radius: 0 20px 20px 0;
+    z-index: var(--z-sidebar, 300);
+    transform: translateX(-100%);
+  }
+  .dash-sidebar.sidebar-open { transform: translateX(0); }
 }
 
-.status-shipped {
-  background: #DBEAFE;
-  color: #1D4ED8;
+.dash-sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 12px 0;
 }
+@media (min-width: 768px) { .dash-sidebar-top { display: none; } }
 
-.status-out {
-  background: #FEF3C7;
-  color: #D97706;
+.dash-sidebar-close {
+  background: var(--surface-hover, #f8fafc);
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #475569);
 }
+.dash-sidebar-close:hover { background: #fee2e2; color: #b91c1c; }
 
-.status-processing {
-  background: #F3E8FF;
-  color: #7C3AED;
-}
-
-.status-cancelled {
-  background: #FEE2E2;
-  color: #DC2626;
-}
-
-/* ── No-underline anchor resets ─────────────────── */
-.no-underline { text-decoration: none !important; }
+/* Keep Tailwind-styled sidebar items working */
+.dash-wrapper .w-72 { width: 100%; }

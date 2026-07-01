@@ -1,16 +1,23 @@
 // server/src/app.js
 'use strict';
 
-const crypto         = require('crypto');
-const express        = require('express');
-const cors           = require('cors');
-const helmet         = require('helmet');
-const rateLimit      = require('express-rate-limit');
-const userRoutes     = require('./routes/user.routes');
-const errorHandler   = require('./middleware/error.middleware');
-const { sanitizeBody } = require('./middleware/validate.middleware');
-const { sendError }  = require('./utils/response');
-const logger         = require('./utils/logger');
+const crypto              = require('crypto');
+const express             = require('express');
+const cors                = require('cors');
+const helmet              = require('helmet');
+const rateLimit           = require('express-rate-limit');
+const userRoutes          = require('./routes/user.routes');
+const productRoutes       = require('./routes/product.routes');
+const cartRoutes          = require('./routes/cart.routes');
+const orderRoutes         = require('./routes/order.routes');
+const wishlistRoutes      = require('./routes/wishlist.routes');
+const addressRoutes       = require('./routes/address.routes');
+const notificationRoutes  = require('./routes/notification.routes');
+const sellerRoutes        = require('./routes/seller.routes');
+const errorHandler        = require('./middleware/error.middleware');
+const { sanitizeBody }    = require('./middleware/validate.middleware');
+const { sendError }       = require('./utils/response');
+const logger              = require('./utils/logger');
 
 const app = express();
 
@@ -104,6 +111,13 @@ app.use((req, res, next) => {
 // NOTE: All profile endpoints are handled inside userRoutes (/api/profile).
 // The separate profileRoutes was removed to eliminate the duplicate route conflict.
 app.use('/api', userRoutes);
+app.use('/api', productRoutes);
+app.use('/api', cartRoutes);
+app.use('/api', orderRoutes);
+app.use('/api', wishlistRoutes);
+app.use('/api', addressRoutes);
+app.use('/api', notificationRoutes);
+app.use('/api', sellerRoutes);
 
 // ── 9. Health check ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
