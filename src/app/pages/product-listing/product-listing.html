@@ -1,128 +1,154 @@
-<!-- Header -->
-<nav class="navbar navbar-expand-lg product-header sticky-top">
-  <div class="container">
+<!-- Product Listing Page -->
+<app-navbar></app-navbar>
 
-    <a routerLink="/home" class="btn btn-light rounded-circle">
-      <i class="bi bi-arrow-left"></i>
+<!-- Toast -->
+<div class="cart-toast" *ngIf="showToast">{{ toastMsg }}</div>
+
+<!-- ── Header Bar ──────────────────────────────────────── -->
+<div class="product-header-bar">
+  <div class="product-header-inner">
+    <a routerLink="/home" class="back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
     </a>
-
-    <h4 class="text-white fw-bold ms-3 mb-0">
-      Products
-    </h4>
-
-    <div class="ms-auto">
-
-      <select
-        class="form-select"
-        (change)="sortProducts($event)">
-
-        <option value="">Sort By</option>
-        <option value="low">Price : Low → High</option>
-        <option value="high">Price : High → Low</option>
-        <option value="best">Best Rated</option>
-
-      </select>
-
+    <h1 class="product-header-title">All Products</h1>
+    <!-- Search bar -->
+    <div class="product-search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input type="text" [(ngModel)]="searchQuery"
+             (keyup.enter)="onSearch()"
+             placeholder="Search products..."
+             class="product-search-input" />
+      <button class="search-go-btn" (click)="onSearch()">Go</button>
     </div>
-
+    <!-- Sort -->
+    <select class="product-sort-select" (change)="sortProducts($event)">
+      <option value="default">Sort By</option>
+      <option value="low">Price: Low → High</option>
+      <option value="high">Price: High → Low</option>
+      <option value="best">Best Rated</option>
+    </select>
   </div>
-</nav>
+</div>
 
-<!-- Categories -->
-
-<section class="container py-4">
-
-  <div class="d-flex flex-wrap gap-2">
-
+<!-- ── Category Filter ─────────────────────────────────── -->
+<section class="category-filter-bar">
+  <div class="category-filter-scroll">
     <button
       *ngFor="let category of categories"
-      class="btn"
-      [class.btn-primary]="selectedCategory==category"
-      [class.btn-outline-primary]="selectedCategory!=category"
+      class="category-chip"
+      [class.active]="selectedCategory === category"
       (click)="filterCategory(category)">
-
-      {{category}}
-
+      {{ category }}
     </button>
-
   </div>
-
 </section>
 
-<!-- Products -->
+<!-- ── Loading State ───────────────────────────────────── -->
+<div class="products-loading" *ngIf="loading">
+  <div class="spinner spinner-primary"></div>
+  <p>Loading products...</p>
+</div>
 
-<section class="container pb-5">
+<!-- ── Error State ─────────────────────────────────────── -->
+<div class="products-error" *ngIf="!loading && error">
+  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+    stroke="var(--danger)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+  </svg>
+  <p>{{ error }}</p>
+  <button class="btn btn-primary btn-sm" (click)="loadProducts()">Retry</button>
+</div>
 
-  <div class="row g-4">
+<!-- ── Products Grid ───────────────────────────────────── -->
+<section class="products-section" *ngIf="!loading && !error">
 
-    <div
-      class="col-lg-3 col-md-4 col-sm-6"
-      *ngFor="let product of filteredProducts">
+  <!-- Result count -->
+  <div class="products-meta" *ngIf="filteredProducts.length > 0">
+    <span>Showing {{ filteredProducts.length }} of {{ totalCount }} products</span>
+    <span *ngIf="selectedCategory !== 'All'" class="category-tag">{{ selectedCategory }}</span>
+  </div>
 
-      <div class="card product-card shadow-sm">
+  <!-- Empty state -->
+  <div class="products-empty" *ngIf="filteredProducts.length === 0">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+      stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    </svg>
+    <h3>No products found</h3>
+    <p>Try a different category or search term</p>
+    <button class="btn btn-outline" (click)="filterCategory('All')">Clear Filter</button>
+  </div>
 
-        <span class="badge bg-danger offer">
+  <!-- Grid -->
+  <div class="products-grid" *ngIf="filteredProducts.length > 0">
+    <div class="product-card-wrap" *ngFor="let product of filteredProducts">
+      <div class="product-card">
 
-          {{product.offer}}
-
+        <!-- Discount badge -->
+        <span class="product-discount-badge"
+              *ngIf="getDiscount(product.price, product.mrp) > 0">
+          {{ getDiscount(product.price, product.mrp) }}% OFF
         </span>
 
-        <img
-          [src]="product.image"
-          class="card-img-top"
-          [alt]="product.name">
+        <!-- Image -->
+        <a [routerLink]="['/product-details', product.product_id]" class="product-img-link">
+          <img [src]="product.image_url || 'https://placehold.co/300x300/f1f5f9/475569?text=Product'"
+               [alt]="product.name"
+               class="product-img"
+               (error)="fallbackImg($event)" />
+        </a>
 
-        <div class="card-body">
+        <!-- Body -->
+        <div class="product-card-body">
+          <span class="product-category-tag">{{ product.category }}</span>
+          <h3 class="product-name">{{ product.name }}</h3>
 
-          <small class="text-primary">
-
-            {{product.category}}
-
-          </small>
-
-          <h5 class="fw-bold mt-2">
-
-            {{product.name}}
-
-          </h5>
-
-          <div class="text-warning mb-2">
-
-            ★★★★★
-
+          <!-- Rating -->
+          <div class="product-rating" *ngIf="product.rating > 0">
+            <span class="stars">
+              <span *ngFor="let s of getStarArray(product.rating)" class="star"
+                    [class.filled]="s <= product.rating">★</span>
+            </span>
+            <span class="rating-count">({{ product.review_count }})</span>
           </div>
 
-          <div>
-
-            <span class="fw-bold text-success fs-4">
-
-              ₹{{product.price}}
-
-            </span>
-
-            <span
-              class="text-muted text-decoration-line-through ms-2">
-
-              ₹{{product.oldPrice}}
-
-            </span>
-
+          <!-- Price -->
+          <div class="product-price-row">
+            <span class="product-price">₹{{ product.price }}</span>
+            <span class="product-mrp" *ngIf="product.mrp > product.price">₹{{ product.mrp }}</span>
           </div>
 
-          <a
-            class="btn btn-success w-100 mt-3"
-            [routerLink]="['/product-details',product.id]">
+          <!-- Stock indicator -->
+          <span class="stock-badge out" *ngIf="product.stock === 0">Out of Stock</span>
 
-            View Details
-
-          </a>
-
+          <!-- Actions -->
+          <div class="product-card-actions">
+            <a [routerLink]="['/product-details', product.product_id]"
+               class="btn btn-outline btn-sm">View</a>
+            <button class="btn btn-primary btn-sm"
+                    [disabled]="product.stock === 0 || isAddingToCart(product.product_id)"
+                    (click)="addToCart(product)">
+              <span *ngIf="!isAddingToCart(product.product_id)">Add to Cart</span>
+              <span *ngIf="isAddingToCart(product.product_id)" class="spinner"></span>
+            </button>
+          </div>
         </div>
 
       </div>
-
     </div>
+  </div>
 
+  <!-- Pagination -->
+  <div class="pagination-row" *ngIf="totalPages > 1">
+    <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">← Prev</button>
+    <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Next →</button>
   </div>
 
 </section>
