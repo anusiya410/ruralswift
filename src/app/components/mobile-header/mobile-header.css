@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  z-index: var(--z-navbar);
+}
+
 /* Mobile Header — shown only on mobile */
 .mobile-header {
   display: flex;
@@ -17,10 +22,6 @@
 
 @media (max-width: 767px) {
   .mobile-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
     padding-top: env(safe-area-inset-top, 0px);
     z-index: calc(var(--z-navbar) + 1);
   }

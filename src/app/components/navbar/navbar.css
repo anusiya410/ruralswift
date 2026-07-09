@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  z-index: var(--z-navbar);
+}
+
 /* Desktop Navbar — hidden on mobile */
 .desktop-header {
   display: none;

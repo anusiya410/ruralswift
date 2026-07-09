@@ -52,10 +52,10 @@ export const authInterceptor: HttpInterceptorFn = (
       // We normalise this so every component sees a clean, friendly message.
       if (error.status === 0) {
         const networkError = new HttpErrorResponse({
-          error:      { message: 'Unable to connect to the server. Please make sure the backend is running and try again.' },
-          status:     0,
+          error: { message: 'Unable to connect to the server. Please make sure the backend is running and try again.' },
+          status: 0,
           statusText: 'Network Error',
-          url:        error.url ?? undefined,
+          url: error.url ?? undefined,
         });
         return throwError(() => networkError);
       }
