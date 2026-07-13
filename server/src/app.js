@@ -22,6 +22,9 @@ const logger              = require('./utils/logger');
 
 const app = express();
 
+// Trust the Vercel reverse proxy so rate-limiting and IPs work correctly
+app.set('trust proxy', 1);
+
 // ── 1. Security headers (helmet) ──────────────────────────────────────────────
 // Sets X-Content-Type-Options, X-Frame-Options, HSTS, CSP, etc.
 app.use(helmet());

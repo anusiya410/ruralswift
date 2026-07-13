@@ -226,6 +226,7 @@
   align-items: center;
   justify-content: center;
   padding: 32px 20px;
+  padding-bottom: calc(32px + var(--bottom-nav-h));
 }
 
 @media (min-width: 900px) {

@@ -499,8 +499,6 @@ input[type='number'] {
   position: relative;
 }
 
-
-
 /* ── Body flex layout ── */
 body {
   display: flex;
@@ -514,7 +512,7 @@ body {
 
 @media (max-width: 767px) {
   .has-bottom-nav {
-    padding-bottom: 0; /* handled by scroll viewport */
+    padding-bottom: var(--bottom-nav-h);
   }
 }
 
