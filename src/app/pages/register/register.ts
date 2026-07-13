@@ -117,10 +117,9 @@ export class RegisterComponent {
         this.isLoading = false;
 
         if ('directLogin' in res && res.directLogin) {
-          // Existing verified account with correct password → auto-login
-          this.api.saveSession(res.token, res.user);
-          this.successMessage = 'Welcome back! Logging you in...';
-          setTimeout(() => this.router.navigate(['/home']), 1200);
+          // Existing verified account with correct password → redirect to login
+          this.successMessage = 'Account exists and verified! Redirecting to login...';
+          setTimeout(() => this.router.navigate(['/login']), 1200);
         } else {
           const otpRes = res as RegisterOtpResponse;
           this.pendingEmail = otpRes.email;
@@ -156,9 +155,8 @@ export class RegisterComponent {
     this.api.verifyRegistrationOtp(this.pendingEmail, this.otp).subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.api.saveSession(res.token, res.user);
-        this.successMessage = 'Email verified! Redirecting to dashboard...';
-        setTimeout(() => this.router.navigate(['/dashboard']), 1200);
+        this.successMessage = 'Email verified! Redirecting to login...';
+        setTimeout(() => this.router.navigate(['/login']), 1200);
       },
       error: (err) => {
         this.isLoading = false;

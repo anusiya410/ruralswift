@@ -21,6 +21,8 @@ export class LoginComponent {
   errorMessage = '';
   isUnverified = false;  // true when server returns AUTH_EMAIL_NOT_VERIFIED
   returnUrl = '/home';
+  otpMode      = false;
+  otp          = '';
 
   constructor(private router: Router, private route: ActivatedRoute, private api: ApiService) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/home';
@@ -56,13 +58,40 @@ export class LoginComponent {
       error: (err) => {
         this.isLoading = false;
         const code = err.error?.code;
-        this.isUnverified = code === 'AUTH_EMAIL_NOT_VERIFIED';
-        this.errorMessage =
-          err.error?.message ||
-          'Login failed. Please check your credentials.';
+        if (code === 'AUTH_EMAIL_NOT_VERIFIED') {
+          this.isUnverified = true;
+          this.otpMode = true;
+          this.errorMessage = '';
+        } else {
+          this.isUnverified = false;
+          this.errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
+        }
       }
     });
 
+  }
+
+  verifyOtp() {
+    this.errorMessage = '';
+
+    if (!/^\d{6}$/.test(this.otp.trim())) {
+      this.errorMessage = 'Please enter the 6-digit OTP.';
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.api.verifyRegistrationOtp(this.email.trim(), this.otp).subscribe({
+      next: (res) => {
+        this.isLoading = false;
+        this.api.saveSession(res.token, res.user, this.rememberMe);
+        this.router.navigateByUrl(this.returnUrl);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err.error?.message || 'OTP verification failed. Please try again.';
+      }
+    });
   }
 
 }

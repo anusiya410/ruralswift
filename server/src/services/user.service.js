@@ -9,7 +9,7 @@ const env            = require('../config/env');
 const logger         = require('../utils/logger');
 const { sendRegistrationOtp, sendPasswordResetEmail } = require('../utils/mailer');
 
-const BCRYPT_ROUNDS  = 12;
+const BCRYPT_ROUNDS  = 10;
 const OTP_TTL_MINUTES = 10;
 
 class UserService {

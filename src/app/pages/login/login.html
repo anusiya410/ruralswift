@@ -30,22 +30,18 @@
     <div class="auth-card">
       
       <!-- Tabs -->
-      <div class="auth-tabs">
+      <div class="auth-tabs" *ngIf="!otpMode">
         <button class="auth-tab active">Sign In</button>
         <button class="auth-tab" routerLink="/register">Register</button>
       </div>
 
-      <h2 class="auth-heading">Welcome Back</h2>
+      <h2 class="auth-heading">{{ otpMode ? 'Verify Your Email' : 'Welcome Back' }}</h2>
 
       <div *ngIf="errorMessage" class="auth-error">
         ⚠️ {{ errorMessage }}
-        <span *ngIf="isUnverified" style="display: block; margin-top: 6px; font-size: 13px;">
-          Haven't received it?
-          <a routerLink="/register" class="alert-link" style="color: var(--primary); font-weight: 600; text-decoration: none;">Re-enter your details to resend OTP →</a>
-        </span>
       </div>
 
-      <form (ngSubmit)="login()" #loginForm="ngForm" class="auth-form">
+      <form *ngIf="!otpMode" (ngSubmit)="login()" #loginForm="ngForm" class="auth-form">
         
         <div class="form-field">
           <label for="email">Email Address</label>
@@ -70,6 +66,34 @@
         <button type="submit" class="auth-submit" [disabled]="isLoading">
           {{ isLoading ? 'Processing...' : 'Sign In to Dashboard' }}
         </button>
+      </form>
+
+      <!-- OTP FORM -->
+      <form *ngIf="otpMode" (ngSubmit)="verifyOtp()" #otpForm="ngForm" class="auth-form">
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
+          We sent a verification code to <strong>{{ email }}</strong> when you registered. Please enter it below.
+        </p>
+        
+        <div class="form-field">
+          <label for="otp">Verification Code</label>
+          <input id="otp" type="text" inputmode="numeric" class="form-input" placeholder="• • • • • •"
+            [(ngModel)]="otp" name="otp" required maxlength="6" autocomplete="one-time-code"
+            style="letter-spacing: 4px; font-weight: 600; text-align: center; font-size: 18px;" />
+        </div>
+        
+        <button type="submit" class="auth-submit" [disabled]="isLoading">
+          {{ isLoading ? 'Verifying...' : 'Verify & Continue' }}
+        </button>
+
+        <div style="text-align: center; margin-top: 16px;">
+          <button type="button" (click)="otpMode = false" style="background: none; border: none; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer;">
+            ← Back to Login
+          </button>
+          <p style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
+            Haven't received it?
+            <a routerLink="/register" style="color: var(--primary); font-weight: 600; text-decoration: none;">Register again to resend OTP →</a>
+          </p>
+        </div>
       </form>
     </div>
   </div>

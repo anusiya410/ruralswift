@@ -145,13 +145,6 @@
               @if (authError()) {
                 <div class="sh-portal-alert sh-portal-alert--error">
                   ⚠️ {{ authError() }}
-                  @if (isUnverified()) {
-                    <span class="sh-alert-action">
-                      <a (click)="isLoginMode.set(false); regStep.set('form'); authError.set(''); isUnverified.set(false)">
-                        Switch to Register to resend OTP →
-                      </a>
-                    </span>
-                  }
                 </div>
               }
               @if (authInfo()) {
@@ -277,10 +270,10 @@
               <!-- OTP actions -->
               @if (regStep() === 'otp') {
                 <div class="sh-portal-otp-actions">
-                  <button (click)="regStep.set('form'); authError.set('')" [disabled]="authLoading()">
+                  <button type="button" (click)="regStep.set('form'); authError.set('')" [disabled]="authLoading()">
                     ← Change details
                   </button>
-                  <button (click)="resendOtp()" [disabled]="authLoading()">
+                  <button type="button" (click)="resendOtp()" [disabled]="authLoading()">
                     ↩ Resend OTP
                   </button>
                 </div>

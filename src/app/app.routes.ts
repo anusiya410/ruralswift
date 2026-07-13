@@ -44,6 +44,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/account/account').then(m => m.AccountComponent)
   },
 
+  // Orders (Dedicated)
+  {
+    path: 'orders',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/orders/orders').then(m => m.OrdersComponent)
+  },
+
   // Order Tracking
   {
     path: 'order-tracking',

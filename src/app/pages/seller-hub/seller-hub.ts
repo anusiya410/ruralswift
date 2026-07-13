@@ -155,8 +155,15 @@ export class SellerHubComponent implements OnInit {
       error: (err) => {
         this.authLoading.set(false);
         const code = err.error?.code;
-        this.isUnverified.set(code === 'AUTH_EMAIL_NOT_VERIFIED');
-        this.authError.set(err.error?.message || 'Invalid credentials.');
+        if (code === 'AUTH_EMAIL_NOT_VERIFIED') {
+          this.isUnverified.set(true);
+          this.isLoginMode.set(false);
+          this.regStep.set('otp');
+          this.authInfo.set('Please enter the verification code sent to your email.');
+        } else {
+          this.isUnverified.set(false);
+          this.authError.set(err.error?.message || 'Invalid credentials.');
+        }
       }
     });
   }
@@ -179,9 +186,10 @@ export class SellerHubComponent implements OnInit {
       next: (res: RegisterResponse) => {
         this.authLoading.set(false);
         if ('directLogin' in res && res.directLogin) {
-          // Already a verified account with correct password
+          // Already a verified account with correct password -> move to seller setup phase
           this.api.saveSession(res.token, res.user);
-          this.tryOpenSellerHub();
+          this.regStep.set('seller-setup');
+          this.registerSellerProfile();
         } else {
           // OTP sent — move to OTP step
           const otpRes = res as RegisterOtpResponse;
@@ -230,16 +238,14 @@ export class SellerHubComponent implements OnInit {
       business_address: this.authForm.businessAddress,
     }).subscribe({
       next: (res) => {
-        // Update the stored session role to 'seller'
-        const stored = this.api.getStoredUser();
-        if (stored) this.api.saveSession(this.api.getToken() || '', { ...stored, role: 'seller' });
-        this.sellerProfile.set((res as any).data?.profile ?? null);
-        this.isAuthenticated.set(true);
+        // Clear session to force explicit login as requested
+        this.api.clearSession();
+        this.isAuthenticated.set(false);
         this.authLoading.set(false);
         this.regStep.set('form');
-        this.authInfo.set('');
-        this.toast.success('Seller account created! Welcome to the Seller Hub.');
-        this.loadDashboard();
+        this.isLoginMode.set(true);
+        this.authInfo.set('Seller account created! Please sign in to access your dashboard.');
+        this.toast.success('Seller account created! Please log in.');
       },
       error: (err) => {
         this.authLoading.set(false);
@@ -267,7 +273,14 @@ export class SellerHubComponent implements OnInit {
   resendOtp(): void {
     this.authError.set('');
     this.regStep.set('form');
-    this.handleRegister();
+    
+    // If they arrived at OTP from login, they need to fill in registration details first
+    if (!this.authForm.fullName.trim()) {
+      this.isLoginMode.set(false);
+      this.authInfo.set('Please fill in your account details to register again and receive a new OTP.');
+    } else {
+      this.handleRegister();
+    }
   }
 
   logout(): void {

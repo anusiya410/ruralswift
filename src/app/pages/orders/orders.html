@@ -1,0 +1,101 @@
+<div class="orders-page has-bottom-nav" id="page-orders">
+  <div class="orders-container">
+    
+    <div class="orders-header">
+      <h1 class="orders-title">Your Orders</h1>
+      <div class="orders-tabs">
+        <button class="orders-tab active">Orders</button>
+        <button class="orders-tab">Buy Again</button>
+        <button class="orders-tab">Not Yet Shipped</button>
+        <button class="orders-tab">Cancelled Orders</button>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="skeleton-list">
+        @for (i of [1,2,3]; track i) {
+          <div class="order-card-skeleton skeleton"></div>
+        }
+      </div>
+    } @else if (orders().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <h2>No orders found</h2>
+        <p>Looks like you haven't placed any orders yet.</p>
+        <button class="btn-primary-action" routerLink="/products">Start Shopping</button>
+      </div>
+    } @else {
+      <div class="orders-list">
+        @for (order of orders(); track order.order_id) {
+          <div class="order-card">
+            
+            <div class="order-card-header">
+              <div class="header-group">
+                <div class="header-item">
+                  <span class="label">ORDER PLACED</span>
+                  <span class="value">{{ formatDate(order.created_at) }}</span>
+                </div>
+                <div class="header-item">
+                  <span class="label">TOTAL</span>
+                  <span class="value">{{ fmt(order.total) }}</span>
+                </div>
+                <div class="header-item">
+                  <span class="label">SHIP TO</span>
+                  <span class="value ship-to" [title]="order.delivery_address || 'Default'">
+                    {{ (order.delivery_address || 'Default Address') | slice:0:20 }}...
+                  </span>
+                </div>
+              </div>
+              <div class="header-right">
+                <span class="label">ORDER # {{ order.order_id }}</span>
+                <div class="order-links">
+                  <a routerLink="/order-tracking" class="order-link">View order details</a>
+                  <span class="separator">|</span>
+                  <a href="javascript:void(0)" class="order-link">Invoice</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="order-card-body">
+              <div class="order-status-banner" [ngClass]="getStatusClass(order.status)">
+                <h3 class="status-title">{{ order.status | titlecase }}</h3>
+                @if (order.status === 'delivered') {
+                  <p class="status-subtitle">Package was handed to resident.</p>
+                } @else if (order.status === 'shipped') {
+                  <p class="status-subtitle">Your package is on the way.</p>
+                }
+              </div>
+
+              <div class="order-items-container">
+                <div class="order-items">
+                  @for (item of order.items; track item.product_id) {
+                    <div class="order-item">
+                      <a [routerLink]="['/product-details', item.product_id]">
+                        <img [src]="item.image_url || placeholderImage" [alt]="item.name" class="item-img" [attr.decoding]="'async'" />
+                      </a>
+                      <div class="item-details">
+                        <a [routerLink]="['/product-details', item.product_id]" class="item-name">{{ item.name }}</a>
+                        <p class="item-meta">Qty: {{ item.quantity }}</p>
+                        <div class="item-actions-inline">
+                          <button class="btn-secondary btn-sm" routerLink="/product-details/{{ item.product_id }}">Buy it again</button>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+                <div class="order-actions">
+                  <button class="btn-primary btn-block" routerLink="/order-tracking">Track package</button>
+                  <button class="btn-secondary btn-block">Return or replace items</button>
+                  <button class="btn-secondary btn-block">Leave seller feedback</button>
+                  <button class="btn-secondary btn-block">Write a product review</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>
