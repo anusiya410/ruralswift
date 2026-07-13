@@ -1,1 +1,24 @@
-<router-outlet></router-outlet>
+<!-- Loading Splash Screen (always present, hides itself after init) -->
+<app-loading-overlay />
+
+<!-- Desktop Navbar (hidden on mobile) -->
+<app-navbar />
+
+<!-- Mobile Header (hidden on desktop) -->
+<app-mobile-header />
+
+<!-- Scroll viewport — pages render here -->
+<div class="app-scroll-viewport" id="app-scroll-viewport">
+  <router-outlet />
+</div>
+
+<!-- Mobile Bottom Navigation -->
+<app-bottom-nav />
+
+<!-- Global Drawer (hamburger + account) -->
+<app-drawer />
+
+
+
+<!-- Global Toast Notifications -->
+<app-toast />

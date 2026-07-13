@@ -1,121 +1,119 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule, DecimalPipe } from '@angular/common';
-import { ActivatedRoute, RouterLink, Router } from '@angular/router';
+// src/app/pages/product-details/product-details.ts
+import {
+  Component, OnInit, ChangeDetectionStrategy, inject, signal
+} from '@angular/core';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { ApiService, Product } from '../../services/api.service';
 import { CartService } from '../../services/cart.service';
-import { NavbarComponent } from '../../components/navbar/navbar';
+import { UiService } from '../../services/ui.service';
+import { ToastService } from '../../services/toast.service';
+import { ImageKitService } from '../../services/imagekit.service';
 
 @Component({
   selector: 'app-product-details',
   standalone: true,
-  imports: [CommonModule, RouterLink, NavbarComponent, DecimalPipe],
+  imports: [CommonModule, RouterLink],
   templateUrl: './product-details.html',
-  styleUrls: ['./product-details.css']
+  styleUrl: './product-details.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductDetailsComponent implements OnInit {
+  private api    = inject(ApiService);
+  private cart   = inject(CartService);
+  private ui     = inject(UiService);
+  private toast  = inject(ToastService);
+  private router = inject(Router);
+  private route  = inject(ActivatedRoute);
+  public imageKit = inject(ImageKitService);
+  public readonly placeholderImage = this.imageKit.placeholder();
 
-  product: Product | null = null;
-  loading  = false;
-  error    = '';
-
-  quantity     = 1;
-  addingToCart = false;
-  togglingWish = false;
-  inWishlist   = false;
-  toastMsg     = '';
-  showToast    = false;
-
-  constructor(
-    private route:  ActivatedRoute,
-    private api:    ApiService,
-    private cart:   CartService,
-    private router: Router
-  ) {}
+  public product     = signal<Product | null>(null);
+  public isLoading   = signal(true);
+  public quantity    = signal(1);
+  public activeImage = signal(0);
+  public inWishlist  = signal(false);
+  public activeTab   = signal<'description' | 'reviews' | 'shipping'>('description');
+  public addingCart  = signal(false);
 
   ngOnInit(): void {
-    this.cart.load();
     const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (!id) { this.error = 'Invalid product ID.'; return; }
-    this.loadProduct(id);
-  }
-
-  loadProduct(id: number): void {
-    this.loading = true;
+    if (!id) { this.router.navigate(['/products']); return; }
     this.api.getProduct(id).subscribe({
       next: (res) => {
-        this.product = (res as any).data?.product ?? null;
-        this.loading = false;
+        this.product.set(res.data?.product ?? null);
+        this.isLoading.set(false);
       },
       error: () => {
-        this.loading = false;
-        this.error   = 'Product not found or server error.';
+        this.isLoading.set(false);
+        this.toast.error('Product not found.');
+        this.router.navigate(['/products']);
       }
     });
   }
 
-  incrementQty(): void {
-    if (this.product && this.quantity < this.product.stock) this.quantity++;
+  get images(): string[] {
+    const p = this.product();
+    if (!p) return [];
+    const all = p.images?.length ? p.images : [p.image_url];
+    return all.filter(Boolean);
   }
 
-  decrementQty(): void {
-    if (this.quantity > 1) this.quantity--;
+  increment(): void {
+    const p = this.product();
+    if (p && this.quantity() < p.stock) this.quantity.update(q => q + 1);
+  }
+
+  decrement(): void {
+    if (this.quantity() > 1) this.quantity.update(q => q - 1);
   }
 
   addToCart(): void {
-    if (!this.product) return;
-    this.addingToCart = true;
-    this.cart.addItem(this.product.product_id, this.quantity);
-    setTimeout(() => {
-      this.addingToCart = false;
-      this._toast(`"${this.product!.name}" added to cart!`);
-    }, 600);
+    const p = this.product();
+    if (!p) return;
+    this.addingCart.set(true);
+    this.cart.addItem(p.product_id, this.quantity());
+    this.toast.success(`${p.name} added to cart`);
+    setTimeout(() => this.addingCart.set(false), 600);
   }
 
   buyNow(): void {
-    if (!this.product) return;
-    if (!this.api.isLoggedIn()) {
-      this.router.navigate(['/login'], { queryParams: { returnUrl: `/product-details/${this.product.product_id}` } });
-      return;
-    }
-    this.addingToCart = true;
-    this.cart.addItem(this.product.product_id, this.quantity);
-    setTimeout(() => {
-      this.addingToCart = false;
-      this.router.navigate(['/cart']);
-    }, 500);
+    const p = this.product();
+    if (!p) return;
+    if (!this.api.isLoggedIn()) { this.router.navigate(['/login']); return; }
+    this.cart.addItem(p.product_id, this.quantity());
+    this.router.navigate(['/cart']);
   }
 
   toggleWishlist(): void {
     if (!this.api.isLoggedIn()) { this.router.navigate(['/login']); return; }
-    if (!this.product) return;
-    this.togglingWish = true;
-
-    const call = this.inWishlist
-      ? this.api.removeFromWishlist(this.product.product_id)
-      : this.api.addToWishlist(this.product.product_id);
-
+    const p = this.product();
+    if (!p) return;
+    const call = this.inWishlist()
+      ? this.api.removeFromWishlist(p.product_id)
+      : this.api.addToWishlist(p.product_id);
     call.subscribe({
       next: () => {
-        this.inWishlist   = !this.inWishlist;
-        this.togglingWish = false;
-        this._toast(this.inWishlist ? 'Added to wishlist ♥' : 'Removed from wishlist');
-      },
-      error: () => { this.togglingWish = false; }
+        this.inWishlist.update(v => !v);
+        this.toast.info(this.inWishlist() ? 'Added to wishlist' : 'Removed from wishlist');
+      }
     });
   }
 
-  getDiscount(price: number, mrp: number): number {
+  discount(price: number, mrp: number): number {
     if (!mrp || mrp <= price) return 0;
     return Math.round(((mrp - price) / mrp) * 100);
   }
 
-  fallbackImg(event: Event): void {
-    (event.target as HTMLImageElement).src = 'https://placehold.co/500x500/f1f5f9/475569?text=Product';
+  fmt(n: number): string {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(n);
   }
 
-  private _toast(msg: string): void {
-    this.toastMsg  = msg;
-    this.showToast = true;
-    setTimeout(() => { this.showToast = false; }, 2500);
+  starsArray(rating: number): number[] {
+    return Array.from({ length: 5 }, (_, i) => i);
+  }
+
+  isFilled(index: number, rating: number): boolean {
+    return index < Math.floor(rating);
   }
 }

@@ -4,13 +4,16 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const authenticateToken = require('../middleware/auth.middleware');
 
-// Auth routes
-router.post('/auth/register', userController.register);
-router.post('/auth/verify-otp', userController.verifyOtp);
-router.post('/auth/login', userController.login);
+// ── Public auth routes ────────────────────────────────────────────────────────
+router.post('/auth/register',        userController.register.bind(userController));
+router.post('/auth/verify-otp',      userController.verifyOtp.bind(userController));
+router.post('/auth/login',           userController.login.bind(userController));
+router.post('/auth/forgot-password', userController.forgotPassword.bind(userController));
+router.post('/auth/reset-password',  userController.resetPassword.bind(userController));
 
-// Profile routes
-router.get('/profile', authenticateToken, userController.getProfile);
-router.put('/profile', authenticateToken, userController.updateProfile);
+// ── Protected profile routes ──────────────────────────────────────────────────
+router.get(  '/profile',        authenticateToken, userController.getProfile.bind(userController));
+router.put(  '/profile',        authenticateToken, userController.updateProfile.bind(userController));
+router.patch('/profile/avatar', authenticateToken, userController.updateAvatar.bind(userController));
 
 module.exports = router;

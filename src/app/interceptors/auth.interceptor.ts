@@ -8,6 +8,8 @@ import {
 } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 import { Router } from '@angular/router';
+import { AuthStateService } from '../services/auth-state.service';
+import { SKIP_AUTH_INTERCEPTOR } from './auth.context';
 
 /**
  * Global HTTP interceptor that:
@@ -27,10 +29,15 @@ export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
   next: HttpHandlerFn
 ) => {
+  if (req.context.get(SKIP_AUTH_INTERCEPTOR)) {
+    return next(req);
+  }
+
   const router = inject(Router);
+  const authState = inject(AuthStateService);
 
   // ── 1. Attach Bearer token if available ───────────────────────────────────
-  const token = localStorage.getItem('token');
+  const token = authState.getToken();
   const authReq = token
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : req;
@@ -54,10 +61,9 @@ export const authInterceptor: HttpInterceptorFn = (
       }
 
       // ── 401 — Token expired or missing → force re-login ──────────────────
-      if (error.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('customerName');
+      // ── 403 — Token tampered / invalid signature ──────────────────────────
+      if (error.status === 401 || error.status === 403) {
+        authState.clearSession();
 
         const url = router.url;
         const isSellerRoute = url.startsWith('/seller-hub');

@@ -14,12 +14,16 @@ const wishlistRoutes      = require('./routes/wishlist.routes');
 const addressRoutes       = require('./routes/address.routes');
 const notificationRoutes  = require('./routes/notification.routes');
 const sellerRoutes        = require('./routes/seller.routes');
+const reviewRoutes        = require('./routes/review.routes');
 const errorHandler        = require('./middleware/error.middleware');
 const { sanitizeBody }    = require('./middleware/validate.middleware');
 const { sendError }       = require('./utils/response');
 const logger              = require('./utils/logger');
 
 const app = express();
+
+// Trust the Vercel reverse proxy so rate-limiting and IPs work correctly
+app.set('trust proxy', 1);
 
 // ── 1. Security headers (helmet) ──────────────────────────────────────────────
 // Sets X-Content-Type-Options, X-Frame-Options, HSTS, CSP, etc.
@@ -29,6 +33,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:4200',
   'https://ruralshift-test.netlify.app',
+  'https://ruralswift-1.vercel.app',
 ];
 
 app.use(cors({
@@ -118,6 +123,7 @@ app.use('/api', wishlistRoutes);
 app.use('/api', addressRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', sellerRoutes);
+app.use('/api', reviewRoutes);
 
 // ── 9. Health check ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
