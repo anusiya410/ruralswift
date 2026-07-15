@@ -335,6 +335,18 @@ class UserService {
       user:  this._formatUserResponse(user, effectiveRole),
     };
   }
+
+  /** Upgrade a user to a delivery partner */
+  async becomeDriver(userId) {
+    const { rows } = await pool.query(
+      `UPDATE users SET role = 'delivery', updated_at = NOW() WHERE user_id = $1 RETURNING *`,
+      [userId]
+    );
+    if (rows.length === 0) throw new Error('User not found.');
+    const user = { ...rows[0] };
+    delete user.password;
+    return user;
+  }
 }
 
 module.exports = new UserService();

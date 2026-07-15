@@ -305,6 +305,20 @@ class UserController {
       next(err);
     }
   }
+
+  /**
+   * POST /api/profile/become-driver
+   * Upgrades the current user to a delivery partner
+   */
+  async becomeDriver(req, res, next) {
+    try {
+      const user = await userService.becomeDriver(req.user.id);
+      return sendSuccess(res, 200, 'You are now a Delivery Partner!', { user });
+    } catch (err) {
+      logger.error('Become driver error', { requestId: req.id, message: err.message });
+      next(err);
+    }
+  }
 }
 
 module.exports = new UserController();

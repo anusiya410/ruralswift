@@ -302,6 +302,14 @@ export class ApiService {
     return this.http.post<ApiResponse<{ product: Product }>>(`${this.baseUrl}/products`, data);
   }
 
+  updateAvatar(avatarUrl: string): Observable<ApiResponse<{ user: UserProfile }>> {
+    return this.http.patch<ApiResponse<{ user: UserProfile }>>(`${this.baseUrl}/profile/avatar`, { avatar_url: avatarUrl });
+  }
+
+  becomeDriver(): Observable<ApiResponse<{ user: UserProfile }>> {
+    return this.http.post<ApiResponse<{ user: UserProfile }>>(`${this.baseUrl}/profile/become-driver`, {});
+  }
+
   updateProduct(id: number, data: Partial<Product>): Observable<ApiResponse<{ product: Product }>> {
     return this.http.put<ApiResponse<{ product: Product }>>(`${this.baseUrl}/products/${id}`, data);
   }
@@ -435,6 +443,16 @@ export class ApiService {
 
   updateSellerOrderStatus(orderId: number, status: string, trackingNumber?: string, deliveryOtp?: string): Observable<ApiResponse> {
     return this.http.put<ApiResponse>(`${this.baseUrl}/seller/orders/${orderId}/status`, { status, trackingNumber, deliveryOtp });
+  }
+
+  // ── Delivery Runs (Driver Hub) ─────────────────────────────────────────────
+
+  getDriverRuns(): Observable<ApiResponse<{ runs: any[] }>> {
+    return this.http.get<ApiResponse<{ runs: any[] }>>(`${this.baseUrl}/delivery-runs`);
+  }
+
+  updateDriverOrderStatus(orderId: number, status: string, deliveryOtp?: string): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.baseUrl}/delivery-runs/orders/${orderId}/status`, { status, deliveryOtp });
   }
 
   private normalizeProductsResponse(res: ApiResponse<{ products: Product[]; pagination: Pagination }>): ApiResponse<{ products: Product[]; pagination: Pagination }> {

@@ -33,6 +33,15 @@ export class SellerHubComponent implements OnInit {
   // Auth state
   public isAuthenticated  = signal(false);
   public initLoading      = signal(true);   // true while checking session on load
+  public isAddingProduct = signal(false);
+  public editingProduct  = signal<any>(null);
+
+  // Delivery / Routing state
+  public drivers = signal<any[]>([]);
+  public selectedDriverId = signal<number | null>(null);
+  public selectedOrderIds = signal<number[]>([]);
+
+  // Form State while checking session on load
   public isLoginMode      = signal(true);
   /**
    * Register steps:
@@ -337,13 +346,51 @@ export class SellerHubComponent implements OnInit {
           lowStock:       d.lowStockCount  ?? 0,
         });
         this.dashLoading.set(false);
-        this.cdr.markForCheck();
         this.loadOrders();
+        this.loadDrivers();
       },
       error: () => {
         this.dashLoading.set(false);
         this.cdr.markForCheck();
       }
+    });
+  }
+
+  // ── Delivery Routing ──────────────────────────────────────────────────────
+  loadDrivers() {
+    (this.sellerSvc as any).getDrivers().subscribe({
+      next: (res: any) => this.drivers.set(res.data?.drivers || [])
+    });
+  }
+
+  toggleOrderSelection(orderId: number) {
+    const current = this.selectedOrderIds();
+    if (current.includes(orderId)) {
+      this.selectedOrderIds.set(current.filter(id => id !== orderId));
+    } else {
+      this.selectedOrderIds.set([...current, orderId]);
+    }
+  }
+
+  createDeliveryRun() {
+    const driverId = this.selectedDriverId();
+    const orderIds = this.selectedOrderIds();
+
+    if (!driverId) {
+      return this.toast.error('Please select a driver first.');
+    }
+    if (orderIds.length === 0) {
+      return this.toast.error('Please select at least one order.');
+    }
+
+    (this.sellerSvc as any).createDeliveryRun(driverId, orderIds).subscribe({
+      next: () => {
+        this.toast.success('Delivery Run created and assigned to driver!');
+        this.selectedOrderIds.set([]); // Reset selection
+        this.selectedDriverId.set(null);
+        this.loadOrders(); // Refresh orders to reflect 'out_for_delivery'
+      },
+      error: () => this.toast.error('Failed to create delivery run.')
     });
   }
 

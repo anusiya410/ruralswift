@@ -668,10 +668,25 @@
                 <p>No orders yet. Keep listing great products!</p>
               </div>
             } @else {
+              <!-- Batch Assign Delivery -->
+              <div style="margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <strong style="color: #0f172a;">🚚 Assign Route:</strong>
+                <select class="sh-form-input" style="width: auto; min-width: 200px; padding: 8px; border-radius: 6px;" [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
+                  <option [ngValue]="null">Select a Delivery Partner...</option>
+                  @for (driver of drivers(); track driver.user_id) {
+                    <option [ngValue]="driver.user_id">{{ driver.name || driver.first_name }} ({{ driver.phone }})</option>
+                  }
+                </select>
+                <button class="sh-primary-btn" style="background: #059669;" (click)="createDeliveryRun()">
+                  Dispatch {{ selectedOrderIds().length }} Orders
+                </button>
+              </div>
+
               <div class="sh-table-wrap">
                 <table class="sh-table">
                   <thead>
                     <tr>
+                      <th style="width: 40px;"></th>
                       <th>Order</th>
                       <th>Customer</th>
                       <th>Date</th>
@@ -683,6 +698,14 @@
                   <tbody>
                     @for (order of sellerOrders(); track order.order_id) {
                       <tr>
+                        <td>
+                          @if (order.status === 'pending' || order.status === 'packed') {
+                            <input type="checkbox" 
+                              style="width: 16px; height: 16px; cursor: pointer;"
+                              [checked]="selectedOrderIds().includes(order.order_id)" 
+                              (change)="toggleOrderSelection(order.order_id)" />
+                          }
+                        </td>
                         <td><strong>#{{ order.order_id }}</strong></td>
                         <td>{{ order.customer_name || '—' }}</td>
                         <td>{{ order.created_at | date:'dd MMM yyyy' }}</td>

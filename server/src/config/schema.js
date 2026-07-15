@@ -289,6 +289,30 @@ async function createTables() {
     await client.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code  VARCHAR(50) DEFAULT ''`);
     await client.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_discount NUMERIC(10,2) DEFAULT 0`);
 
+    // ── 14. Delivery Routing & Optimization ──────────────────────────────────────
+    await client.query(`ALTER TABLE addresses ADD COLUMN IF NOT EXISTS latitude  NUMERIC(10,7)`);
+    await client.query(`ALTER TABLE addresses ADD COLUMN IF NOT EXISTS longitude NUMERIC(10,7)`);
+    
+    await client.query(`ALTER TABLE seller_profiles ADD COLUMN IF NOT EXISTS latitude  NUMERIC(10,7)`);
+    await client.query(`ALTER TABLE seller_profiles ADD COLUMN IF NOT EXISTS longitude NUMERIC(10,7)`);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS delivery_runs (
+        id             SERIAL       PRIMARY KEY,
+        driver_id      INT          NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+        status         VARCHAR(50)  DEFAULT 'pending',
+        start_time     TIMESTAMP,
+        end_time       TIMESTAMP,
+        created_at     TIMESTAMP    DEFAULT NOW(),
+        updated_at     TIMESTAMP    DEFAULT NOW()
+      )
+    `);
+
+    // Link orders to a specific delivery run and add driver sequencing
+    await client.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_run_id INT REFERENCES delivery_runs(id) ON DELETE SET NULL`);
+    await client.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_sequence INT DEFAULT 0`);
+
+
     console.log('✅  [Schema] Migration complete');
     console.log('    → Tables: users, seller_profiles, products, cart_items, orders, order_items, addresses, wishlist, notifications, password_reset_tokens, reviews, coupons');
     console.log('    → Indexes applied for performance');

@@ -33,6 +33,21 @@
           </button>
         }
         <div class="sidebar-divider"></div>
+        
+        @if (user()?.role === 'delivery') {
+          <a class="sidebar-tab" routerLink="/delivery-hub" style="color: #4338ca; font-weight: 600; text-decoration: none;">
+            <span class="sidebar-tab-icon">🚚</span>
+            Driver Dashboard
+          </a>
+        }
+
+        @if (user()?.role === 'customer') {
+          <button class="sidebar-tab" (click)="becomeDriver()" style="color: #059669; font-weight: 600;">
+            <span class="sidebar-tab-icon">🛵</span>
+            Become Delivery Partner
+          </button>
+        }
+
         <button class="sidebar-tab sidebar-tab--danger" (click)="handleLogout()">
           <span class="sidebar-tab-icon">🚪</span>
           Sign Out

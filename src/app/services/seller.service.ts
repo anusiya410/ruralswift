@@ -102,6 +102,16 @@ export class SellerService {
     return this.http.delete<ApiResponse>(`${this.baseUrl}/seller/products/${id}`);
   }
 
+  // ── Delivery / Drivers ──────────────────────────────────────────────
+
+  getDrivers(): Observable<ApiResponse<{ drivers: any[] }>> {
+    return this.http.get<ApiResponse<{ drivers: any[] }>>(`${this.baseUrl}/seller/drivers`);
+  }
+
+  createDeliveryRun(driverId: number, orderIds: number[]): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.baseUrl}/delivery-runs`, { driverId, orderIds });
+  }
+
   /** Get orders for seller's products */
   getOrders(filters: { status?: string; page?: number; limit?: number } = {}): Observable<ApiResponse<{ orders: SellerOrder[] }>> {
     return this.api.getSellerOrders(filters) as Observable<ApiResponse<{ orders: SellerOrder[] }>>;

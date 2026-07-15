@@ -15,5 +15,6 @@ router.post('/auth/reset-password',  userController.resetPassword.bind(userContr
 router.get(  '/profile',        authenticateToken, userController.getProfile.bind(userController));
 router.put(  '/profile',        authenticateToken, userController.updateProfile.bind(userController));
 router.patch('/profile/avatar', authenticateToken, userController.updateAvatar.bind(userController));
+router.post( '/profile/become-driver', authenticateToken, userController.becomeDriver.bind(userController));
 
 module.exports = router;

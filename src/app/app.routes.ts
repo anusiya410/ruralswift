@@ -64,6 +64,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/seller-hub/seller-hub').then(m => m.SellerHubComponent)
   },
 
+  // Driver Dashboard
+  {
+    path: 'delivery-hub',
+    loadComponent: () => import('./pages/driver-dashboard/driver-dashboard').then(m => m.DriverDashboardComponent)
+  },
+
   // Auth pages (standalone fallback — main auth uses overlay)
   {
     path: 'login',

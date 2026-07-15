@@ -1,0 +1,152 @@
+@if (isDriver()) {
+  <!-- ── DRIVER DASHBOARD ── -->
+  <div class="driver-page" id="page-driver-dashboard">
+    @if (!activeRun()) {
+      <!-- List View -->
+      <header class="driver-header">
+        <h1>My Delivery Runs</h1>
+        <p>Today's optimized routes</p>
+      </header>
+
+      @if (isLoading()) {
+        <div class="runs-list">
+          <div class="run-skeleton skeleton"></div>
+          <div class="run-skeleton skeleton"></div>
+        </div>
+      } @else if (runs().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🚚</div>
+          <h3>No active runs</h3>
+          <p>You don't have any deliveries assigned right now.</p>
+        </div>
+      } @else {
+        <div class="runs-list">
+          @for (run of runs(); track run.id) {
+            <div class="run-card">
+              <div class="run-header">
+                <h3>Run #{{ run.id }}</h3>
+                <span class="status-badge" [class.status-pending]="run.status === 'pending'">{{ run.status }}</span>
+              </div>
+              <p class="run-stops">{{ run.stops?.length || 0 }} Stops Assigned</p>
+              <p class="run-date">Created: {{ run.created_at | date:'short' }}</p>
+              <button class="btn-start" (click)="viewRun(run)">View Route</button>
+            </div>
+          }
+        </div>
+      }
+    } @else {
+      <!-- Detail View / Map -->
+      <header class="driver-header detail-header">
+        <button class="btn-back" (click)="backToList()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <h1>Run #{{ activeRun().id }}</h1>
+      </header>
+
+      <div class="map-container-wrapper">
+        <div #map class="leaflet-map" id="delivery-map"></div>
+      </div>
+
+      <div class="stops-list">
+        <h2>Optimized Sequence</h2>
+        @for (stop of activeRun().stops; track stop.order_id) {
+          <div class="stop-card">
+            <div class="stop-sequence">{{ stop.sequence }}</div>
+            <div class="stop-info">
+              <h4>Order #{{ stop.order_id }}</h4>
+              <p>{{ stop.address }}</p>
+            </div>
+            <div class="stop-actions">
+              @if (stop.status === 'delivered') {
+                <span class="badge-delivered">Delivered ✅</span>
+              } @else {
+                <button class="btn-deliver" (click)="markDelivered(stop.order_id)">Deliver</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <!-- ── DRIVER LANDING PORTAL ── -->
+  <div class="dl-portal-bg" id="driver-hub-auth">
+    <div class="dl-portal-topbar">
+      <div class="dl-portal-topbar-brand">
+        <span class="dl-portal-logo">🚚</span>
+        <span class="dl-portal-name">RuralSwift</span>
+        <span class="dl-portal-sep">|</span>
+        <span class="dl-portal-label">Logistics</span>
+      </div>
+      <a href="/home" class="dl-portal-back-link">← Back to Store</a>
+    </div>
+
+    <div class="dl-portal-body">
+      <div class="dl-portal-info">
+        <div class="dl-portal-badge">📦 Last-Mile Network</div>
+        <h1 class="dl-portal-title">Deliver Smiles,<br/>Earn on Your Schedule</h1>
+        <p class="dl-portal-sub">
+          Join the RuralSwift Logistics network. Get mathematically optimized routes, real-time map navigation, and fast payouts.
+        </p>
+
+        <div class="dl-portal-stats">
+          <div class="dl-portal-stat">
+            <span class="dl-portal-stat-val">Flexible</span>
+            <span class="dl-portal-stat-lbl">Working Hours</span>
+          </div>
+          <div class="dl-portal-stat-div"></div>
+          <div class="dl-portal-stat">
+            <span class="dl-portal-stat-val">Weekly</span>
+            <span class="dl-portal-stat-lbl">Payouts</span>
+          </div>
+        </div>
+
+        <ul class="dl-portal-features">
+          <li>
+            <span class="dl-pf-icon">📍</span>
+            <div>
+              <strong>Smart Routing</strong>
+              <span>Our AI calculates the fastest path to save your time and fuel.</span>
+            </div>
+          </li>
+          <li>
+            <span class="dl-pf-icon">📱</span>
+            <div>
+              <strong>In-App Maps</strong>
+              <span>Never get lost with integrated Leaflet navigation.</span>
+            </div>
+          </li>
+          <li>
+            <span class="dl-pf-icon">🔒</span>
+            <div>
+              <strong>Secure OTP Deliveries</strong>
+              <span>Every delivery is verified securely for your protection.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dl-portal-form-wrap">
+        <div class="dl-portal-card">
+          <div class="dl-portal-card-header">
+            <h2>Start Delivering Today</h2>
+            <p>Activate your Logistics profile instantly.</p>
+          </div>
+          <div class="dl-action-container">
+            @if (isAuthenticated()) {
+              <button class="dl-primary-btn" (click)="becomeDriver()" [disabled]="isUpgrading()">
+                {{ isUpgrading() ? 'Activating Profile...' : 'Activate Delivery Profile' }}
+              </button>
+            } @else {
+              <p style="margin-bottom: 20px; color: #475569; font-size: 14px;">You need a RuralSwift account before becoming a delivery partner.</p>
+              <a href="/login" class="dl-primary-btn" style="text-decoration: none; text-align: center;">Sign In to Register</a>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
