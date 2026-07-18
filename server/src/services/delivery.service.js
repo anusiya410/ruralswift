@@ -3,82 +3,107 @@
 const { pool } = require('../config/db');
 const { optimizeRouteNearestNeighbor } = require('../utils/geo');
 
+/** Geocode an Indian address using Nominatim — PIN first, then city/state fallback */
+async function geocodeIndianAddress(address) {
+  if (!address) return null;
+  const headers = { 'User-Agent': 'RuralSwift/1.0', 'Accept-Language': 'en' };
+
+  const tryFetch = async (query) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=1`,
+        { headers }
+      );
+      const data = await res.json();
+      if (data && data.length > 0) return { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) };
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  // 1. PIN code — most reliable for India
+  const pinMatch = address.match(/\b(\d{6})\b/);
+  if (pinMatch) {
+    const r = await tryFetch(`${pinMatch[1]}, India`);
+    if (r) return r;
+  }
+
+  const parts = address.split(',').map(p => p.trim()).filter(p => p.length > 0);
+
+  // 2. Last 3 parts (locality, city, state)
+  if (parts.length >= 3) {
+    const r = await tryFetch(parts.slice(-3).join(', ') + ', India');
+    if (r) return r;
+  }
+
+  // 3. Last 2 parts (city, state)
+  if (parts.length >= 2) {
+    const r = await tryFetch(parts.slice(-2).join(', ') + ', India');
+    if (r) return r;
+  }
+
+  // 4. Full address
+  return tryFetch(address + ', India');
+}
+
 class DeliveryService {
   /**
    * Group unassigned orders into a delivery run, optimize the route, and assign a driver.
-   * 
-   * @param {number} driverId - The user_id of the driver (must have role 'delivery')
-   * @param {number} sellerId - The seller from whom the orders originate
-   * @param {Array<number>} orderIds - The IDs of the orders to batch
    */
   async createDeliveryRun(driverId, sellerId, orderIds) {
     if (!orderIds || orderIds.length === 0) throw new Error('No orders provided for delivery run.');
 
-    // 1. Verify Driver (If you haven't explicitly added a driver user yet, we will just warn but proceed for now)
+    // 1. Verify Driver
     const driverRes = await pool.query(`SELECT role FROM users WHERE user_id = $1`, [driverId]);
-    if (driverRes.rowCount === 0) {
-      throw new Error('Assigned driver does not exist.');
-    }
+    if (driverRes.rowCount === 0) throw new Error('Assigned driver does not exist.');
 
     // 2. Fetch Seller Hub Location
     const sellerRes = await pool.query(`SELECT latitude, longitude FROM seller_profiles WHERE user_id = $1`, [sellerId]);
     let sellerHub = sellerRes.rows[0];
-    
-    // Fallback hub location if missing (mock coordinates for testing)
+
+    // Default hub: center of India (not Delhi)
     if (!sellerHub || !sellerHub.latitude || !sellerHub.longitude) {
-      sellerHub = { latitude: 28.6139, longitude: 77.2090 }; // e.g., New Delhi
+      sellerHub = { latitude: 10.7905, longitude: 78.7047 }; // Tiruchirappalli (central TN)
     }
 
     // 3. Fetch Orders
-    // We only want orders that haven't been delivered or cancelled yet.
     const ordersRes = await pool.query(
       `SELECT order_id, user_id, delivery_address, status FROM orders WHERE order_id = ANY($1) AND status NOT IN ('delivered', 'cancelled')`,
       [orderIds]
     );
-
     if (ordersRes.rowCount === 0) throw new Error('No valid orders found to batch.');
 
-    // 3.5 Prevent driver from delivering their own order
-    // (TEMPORARILY DISABLED for testing so you can assign orders to your active account)
-    // const selfOrder = ordersRes.rows.find(o => o.user_id == driverId);
-    // if (selfOrder) {
-    //   throw new Error(`Conflict of interest: Driver cannot be assigned to deliver their own order (Order #${selfOrder.order_id}).`);
-    // }
-
-    // 4. Assign mock coordinates to orders for the TSP algorithm
-    // In production, the lat/long would be saved on the order or fetched from the address table.
-    const points = ordersRes.rows.map((o) => ({
-      id: o.order_id,
-      // Creating slight distance variations to demonstrate the sorting algorithm
-      latitude: parseFloat(sellerHub.latitude) + (Math.random() * 0.05 - 0.025),
-      longitude: parseFloat(sellerHub.longitude) + (Math.random() * 0.05 - 0.025),
-      address: o.delivery_address
+    // 4. Geocode each delivery address (real coordinates)
+    const points = await Promise.all(ordersRes.rows.map(async (o) => {
+      let coords = await geocodeIndianAddress(o.delivery_address);
+      if (!coords) {
+        // Fallback: use hub + tiny offset so nearest-neighbor still works
+        coords = {
+          latitude: parseFloat(sellerHub.latitude) + (Math.random() * 0.02 - 0.01),
+          longitude: parseFloat(sellerHub.longitude) + (Math.random() * 0.02 - 0.01)
+        };
+      }
+      return { id: o.order_id, ...coords, address: o.delivery_address };
     }));
 
-    // 5. Optimize the route using Nearest Neighbor math!
+    // 5. Optimize route using Nearest Neighbor
     const startPoint = { latitude: parseFloat(sellerHub.latitude), longitude: parseFloat(sellerHub.longitude) };
     const optimizedRoute = optimizeRouteNearestNeighbor(startPoint, points);
 
-    // 6. Create the Delivery Run
+    // 6. Create the Delivery Run record
     const runRes = await pool.query(
       `INSERT INTO delivery_runs (driver_id, status, start_time) VALUES ($1, 'pending', NOW()) RETURNING id`,
       [driverId]
     );
     const runId = runRes.rows[0].id;
 
-    // 7. Update the orders with the run ID and their optimized sequence (1st, 2nd, 3rd stop)
+    // 7. Update orders with run ID and optimized sequence
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       for (let i = 0; i < optimizedRoute.length; i++) {
-        const orderId = optimizedRoute[i].id;
-        const sequence = i + 1; // 1st stop, 2nd stop...
-        
         await client.query(
-          `UPDATE orders 
-           SET delivery_run_id = $1, delivery_sequence = $2, status = 'out_for_delivery', updated_at = NOW() 
-           WHERE order_id = $3`,
-          [runId, sequence, orderId]
+          `UPDATE orders SET delivery_run_id = $1, delivery_sequence = $2, status = 'out_for_delivery', updated_at = NOW() WHERE order_id = $3`,
+          [runId, i + 1, optimizedRoute[i].id]
         );
       }
       await client.query('COMMIT');
@@ -92,13 +117,13 @@ class DeliveryService {
     return { runId, route: optimizedRoute };
   }
 
-  /** GET driver's active runs */
+  /** GET driver's active runs with stops in optimized sequence */
   async getDriverRuns(driverId) {
     const { rows } = await pool.query(
-      `SELECT r.id, r.status, r.created_at,
+      `SELECT r.id, r.status, r.driver_id, r.created_at,
               json_agg(
                 json_build_object(
-                  'order_id', o.order_id, 
+                  'order_id', o.order_id,
                   'sequence', o.delivery_sequence,
                   'address', o.delivery_address,
                   'status', o.status
@@ -113,6 +138,21 @@ class DeliveryService {
     );
     return rows;
   }
+
+  /** Find the run that contains a specific order (for customer tracking) */
+  async getRunByOrderId(orderId) {
+    const { rows } = await pool.query(
+      `SELECT r.id, r.driver_id, r.status
+       FROM delivery_runs r
+       INNER JOIN orders o ON o.delivery_run_id = r.id
+       WHERE o.order_id = $1
+       LIMIT 1`,
+      [orderId]
+    );
+    return rows[0] || null;
+  }
 }
 
 module.exports = new DeliveryService();
+
+

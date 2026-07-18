@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -13,17 +13,20 @@ import * as L from 'leaflet';
   styleUrl: './driver-dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DriverDashboardComponent implements OnInit, AfterViewInit {
+export class DriverDashboardComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private toast = inject(ToastService);
   private router = inject(Router);
 
   @ViewChild('map') mapContainer!: ElementRef;
   private map!: L.Map;
-  
+  private liveWatchId: number | null = null;
+  private locationPushInterval: any = null;
+
   public runs = signal<any[]>([]);
   public isLoading = signal(true);
   public activeRun = signal<any | null>(null);
+  public stopEtas = signal<string[]>([]);
 
   // Auth & State
   public isAuthenticated = signal(false);
@@ -32,6 +35,10 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.checkAuth();
+  }
+
+  ngOnDestroy() {
+    this.stopGpsTracking();
   }
 
   checkAuth() {
@@ -68,10 +75,6 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngAfterViewInit() {
-    // We'll initialize the map when an active run is selected
-  }
-
   loadRuns() {
     this.isLoading.set(true);
     this.api.getDriverRuns().subscribe({
@@ -88,27 +91,31 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
 
   viewRun(run: any) {
     this.activeRun.set(run);
-
-    // Wait a tick for the DOM to render the map container, then geocode & render
-    setTimeout(() => {
-      this.initMap(run);
-    }, 100);
+    setTimeout(() => { this.initMap(run); }, 150);
   }
 
   backToList() {
     this.activeRun.set(null);
+    this.stopEtas.set([]);
+    this.stopGpsTracking();
+    if (this.map) { this.map.remove(); }
+  }
+
+  stopGpsTracking() {
     if (this.liveWatchId !== null) {
       navigator.geolocation.clearWatch(this.liveWatchId);
       this.liveWatchId = null;
     }
-    if (this.map) {
-      this.map.remove();
+    if (this.locationPushInterval) {
+      clearInterval(this.locationPushInterval);
+      this.locationPushInterval = null;
     }
   }
 
+  // ─── Geocoding ────────────────────────────────────────────────────────────
+
   async geocodeIndianAddress(address: string): Promise<[number, number] | null> {
     const headers = { 'Accept-Language': 'en' };
-
     const tryFetch = async (query: string): Promise<[number, number] | null> => {
       try {
         const res = await fetch(
@@ -116,169 +123,174 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
           { headers }
         );
         const data = await res.json();
-        if (data && data.length > 0) {
-          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        }
-      } catch { /* ignore */ }
+        if (data?.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      } catch { }
       return null;
     };
 
-    // 1. Try PIN code first (most reliable for India)
     const pinMatch = address.match(/\b(\d{6})\b/);
     if (pinMatch) {
-      const result = await tryFetch(`${pinMatch[1]}, India`);
-      if (result) return result;
+      const r = await tryFetch(`${pinMatch[1]}, India`);
+      if (r) return r;
     }
-
-    // 2. Try last 3 parts (city, state, pin)
     const parts = address.split(',').map(p => p.trim()).filter(p => p.length > 0);
     if (parts.length >= 3) {
-      const result = await tryFetch(parts.slice(-3).join(', ') + ', India');
-      if (result) return result;
+      const r = await tryFetch(parts.slice(-3).join(', ') + ', India');
+      if (r) return r;
     }
-
-    // 3. Try last 2 parts (city, state)
     if (parts.length >= 2) {
-      const result = await tryFetch(parts.slice(-2).join(', ') + ', India');
-      if (result) return result;
+      const r = await tryFetch(parts.slice(-2).join(', ') + ', India');
+      if (r) return r;
     }
-
-    // 4. Full address fallback
     return tryFetch(address + ', India');
   }
 
-  private liveWatchId: number | null = null;
+  // ─── OSRM Route ───────────────────────────────────────────────────────────
 
-  getLivePosition(): Promise<GeolocationPosition> {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation not supported'));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      });
-    });
-  }
-
-  async drawOsrmRoute(map: L.Map, fromLat: number, fromLng: number, toLat: number, toLng: number): Promise<void> {
+  async getOsrmRoute(waypoints: [number, number][]): Promise<[number, number][] | null> {
     try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+      const coords = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(';');
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
       const res = await fetch(url);
       const data = await res.json();
-      if (data.routes && data.routes.length > 0) {
-        const coords: [number, number][] = data.routes[0].geometry.coordinates.map(
-          (c: number[]) => [c[1], c[0]] as [number, number]
-        );
-        L.polyline(coords, {
-          color: '#1a73e8',
-          weight: 6,
-          opacity: 0.85,
-          lineJoin: 'round',
-          lineCap: 'round'
-        }).addTo(map);
+      if (data.routes?.length > 0) {
+        return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
       }
-    } catch {
-      // Fallback to straight dashed line
-      L.polyline([[fromLat, fromLng], [toLat, toLng]], {
-        color: '#1a73e8', weight: 5, dashArray: '10, 8', opacity: 0.7
-      }).addTo(map);
-    }
+    } catch { }
+    return null;
   }
+
+  /** Haversine distance in km */
+  distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // ─── Map Initialization ───────────────────────────────────────────────────
 
   async initMap(run: any) {
     if (this.map) { this.map.remove(); }
-    if (this.liveWatchId !== null) {
-      navigator.geolocation.clearWatch(this.liveWatchId);
-      this.liveWatchId = null;
-    }
+    this.stopGpsTracking();
 
-    // --- Step 1: Get driver's live GPS position ---
+    // ── Step 1: Get driver's real GPS ──────────────────────────────────────
     let driverLat = 20.5937;
     let driverLng = 78.9629;
-    let hasLiveLocation = false;
+    let hasGps = false;
 
     try {
-      const pos = await this.getLivePosition();
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+        })
+      );
       driverLat = pos.coords.latitude;
       driverLng = pos.coords.longitude;
-      hasLiveLocation = true;
+      hasGps = true;
     } catch {
-      this.toast.error('📍 Could not get live location. Using last known position.');
+      this.toast.error('📍 GPS unavailable. Map centered on delivery area.');
     }
 
-    // --- Step 2: Initialize map at driver's real location ---
-    this.map = L.map(this.mapContainer.nativeElement).setView([driverLat, driverLng], 14);
+    // ── Step 2: Geocode each stop's real address ───────────────────────────
+    const stops = (run.stops || []).slice().sort((a: any, b: any) => a.sequence - b.sequence);
+    if (stops.length === 0) return;
 
-    // Free OpenStreetMap tiles (no API key needed)
+    const stopCoords: [number, number][] = [];
+    for (const stop of stops) {
+      const addr = stop.address || stop.delivery_address || '';
+      const coords = addr ? await this.geocodeIndianAddress(addr) : null;
+      if (coords) {
+        stopCoords.push(coords);
+      } else {
+        stopCoords.push([driverLat + stopCoords.length * 0.01, driverLng + stopCoords.length * 0.01]);
+      }
+    }
+
+    // ── Step 3: If GPS failed, center on first stop ────────────────────────
+    if (!hasGps && stopCoords.length > 0) {
+      driverLat = stopCoords[0][0] - 0.02;
+      driverLng = stopCoords[0][1] - 0.02;
+    }
+
+    // ── Step 4: Calculate ETAs per stop (avg 30 km/h on rural roads) ───────
+    const avgSpeedKmh = 30;
+    let cumulativeKm = 0;
+    let prevLat = driverLat, prevLng = driverLng;
+    const etaStrings: string[] = [];
+
+    for (const [sLat, sLng] of stopCoords) {
+      cumulativeKm += this.distanceKm(prevLat, prevLng, sLat, sLng);
+      const etaMins = Math.round((cumulativeKm / avgSpeedKmh) * 60);
+      const etaDate = new Date(Date.now() + etaMins * 60 * 1000);
+      etaStrings.push(`~${etaMins} min (${etaDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })})`);
+      prevLat = sLat; prevLng = sLng;
+    }
+    this.stopEtas.set(etaStrings);
+
+    // ── Step 5: Init map ───────────────────────────────────────────────────
+    const centerLat = stopCoords[0][0];
+    const centerLng = stopCoords[0][1];
+    this.map = L.map(this.mapContainer.nativeElement).setView([centerLat, centerLng], 13);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19
     }).addTo(this.map);
 
-    // --- Step 3: Driver live location marker ---
+    // ── Step 6: Driver marker ──────────────────────────────────────────────
     const driverIcon = L.divIcon({
       className: '',
-      html: `<div style="
-        background:#1a73e8;color:#fff;border-radius:50%;
-        width:40px;height:40px;display:flex;align-items:center;
-        justify-content:center;font-size:20px;
-        box-shadow:0 2px 8px rgba(26,115,232,0.5);
-        border:3px solid #fff;">🛵</div>`,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
+      html: `<div style="background:#1a73e8;color:#fff;border-radius:50%;
+        width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+        font-size:22px;box-shadow:0 3px 10px rgba(26,115,232,0.6);border:3px solid #fff;">🛵</div>`,
+      iconSize: [42, 42], iconAnchor: [21, 21]
     });
 
     let driverMarker = L.marker([driverLat, driverLng], { icon: driverIcon })
       .addTo(this.map)
-      .bindPopup(`<b>📍 Your Live Location</b>${hasLiveLocation ? '' : '<br><small>(Approximate)</small>'}`)
+      .bindPopup(`<b>📍 Your Location</b>${hasGps ? '' : '<br><small>(GPS unavailable)</small>'}`)
       .openPopup();
 
-    // --- Step 4: Geocode & add stop markers ---
-    const stops = run.stops || [];
-    const stopCoords: [number, number][] = [];
-
-    for (let i = 0; i < stops.length; i++) {
-      const stop = stops[i];
-      const address = stop.address || stop.delivery_address || '';
-      let sLat = driverLat + (i + 1) * 0.01;
-      let sLng = driverLng + (i + 1) * 0.01;
-
-      const coords = address ? await this.geocodeIndianAddress(address) : null;
-      if (coords) { [sLat, sLng] = coords; }
-
-      stopCoords.push([sLat, sLng]);
-
+    // ── Step 7: Stop markers ───────────────────────────────────────────────
+    stops.forEach((stop: any, i: number) => {
+      const [sLat, sLng] = stopCoords[i];
       const stopIcon = L.divIcon({
         className: '',
-        html: `<div style="
-          background:#ea4335;color:#fff;border-radius:50%;
-          width:36px;height:36px;display:flex;align-items:center;
-          justify-content:center;font-size:16px;font-weight:bold;
-          box-shadow:0 2px 8px rgba(234,67,53,0.5);
-          border:3px solid #fff;">${i + 1}</div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        html: `<div style="background:#ea4335;color:#fff;border-radius:50%;
+          width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+          font-size:15px;font-weight:bold;box-shadow:0 3px 10px rgba(234,67,53,0.6);border:3px solid #fff;">${i + 1}</div>`,
+        iconSize: [38, 38], iconAnchor: [19, 19]
       });
-
       L.marker([sLat, sLng], { icon: stopIcon })
         .addTo(this.map)
-        .bindPopup(`<b>Stop ${i + 1}</b><br>${address || 'Delivery Location'}`);
+        .bindPopup(`<b>Stop ${i + 1}</b><br>${stop.address || 'Delivery Location'}<br><small>ETA: ${etaStrings[i]}</small>`);
+    });
 
-      // Draw OSRM road route from driver to this stop
-      await this.drawOsrmRoute(this.map, driverLat, driverLng, sLat, sLng);
+    // ── Step 8: Draw OSRM road route through all waypoints ─────────────────
+    const waypoints: [number, number][] = [[driverLat, driverLng], ...stopCoords];
+    const routeCoords = await this.getOsrmRoute(waypoints);
+
+    if (routeCoords) {
+      L.polyline(routeCoords, {
+        color: '#1a73e8', weight: 6, opacity: 0.85, lineJoin: 'round', lineCap: 'round'
+      }).addTo(this.map);
+      this.map.fitBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
+    } else {
+      // Fallback straight lines
+      L.polyline(waypoints, { color: '#1a73e8', weight: 5, dashArray: '10, 8' }).addTo(this.map);
+      this.map.fitBounds(L.latLngBounds(waypoints), { padding: [50, 50] });
     }
 
-    // --- Step 5: Fit map to show driver + all stops ---
-    const allPoints: [number, number][] = [[driverLat, driverLng], ...stopCoords];
-    if (allPoints.length > 1) {
-      this.map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50] });
-    }
+    // ── Step 9: Push GPS to backend & watch for updates ────────────────────
+    const pushLocation = (lat: number, lng: number) => {
+      this.api.updateDriverLocation(lat, lng).subscribe({ error: () => {} });
+    };
 
-    // --- Step 6: Watch live GPS and update driver marker in real time ---
-    if (hasLiveLocation && navigator.geolocation) {
+    if (hasGps) {
+      pushLocation(driverLat, driverLng);
+
       this.liveWatchId = navigator.geolocation.watchPosition(
         (pos) => {
           const newLat = pos.coords.latitude;
@@ -288,6 +300,11 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
         () => {},
         { enableHighAccuracy: true, maximumAge: 3000 }
       );
+
+      this.locationPushInterval = setInterval(() => {
+        const pos = driverMarker.getLatLng();
+        pushLocation(pos.lat, pos.lng);
+      }, 5000);
     }
   }
 
@@ -298,8 +315,9 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
     this.api.updateDriverOrderStatus(orderId, 'delivered', otp).subscribe({
       next: () => {
         this.toast.success('Order delivered successfully!');
-        this.loadRuns(); // Reload data
-        this.activeRun.set(null); // Go back to list
+        this.loadRuns();
+        this.activeRun.set(null);
+        this.stopGpsTracking();
       },
       error: (err) => {
         this.toast.error(err.error?.message || 'Failed to verify OTP.');

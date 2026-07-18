@@ -1,6 +1,6 @@
 // src/app/pages/order-tracking/order-tracking.ts
 import {
-  Component, OnInit, ChangeDetectionStrategy, inject, signal, ViewChild, ElementRef
+  Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, signal, ViewChild, ElementRef
 } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -26,7 +26,7 @@ interface TimelineStep {
   styleUrl: './order-tracking.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrderTrackingComponent implements OnInit {
+export class OrderTrackingComponent implements OnInit, OnDestroy {
   public api    = inject(ApiService);
   private route  = inject(ActivatedRoute);
   private router = inject(Router);
@@ -36,12 +36,16 @@ export class OrderTrackingComponent implements OnInit {
   public searchId   = signal('');
   public isLoading  = signal(false);
   public error      = signal('');
-  public order      = signal<Order | null>(null);
-  public timeline   = signal<TimelineStep[]>([]);
-  public fastTrack  = signal<{ standard: number, optimized: number, saved: number, unit: string } | null>(null);
+  public order           = signal<Order | null>(null);
+  public timeline        = signal<TimelineStep[]>([]);
+  public fastTrack       = signal<{ standard: number, optimized: number, saved: number, unit: string } | null>(null);
+  public driverLocation  = signal<{ lat: number; lng: number; isStale: boolean } | null>(null);
+  public etaWindow       = signal<{ earliest: string; latest: string; etaMins: number } | null>(null);
 
   @ViewChild('trackingMap') mapContainer?: ElementRef;
   private map?: L.Map;
+  private driverPollInterval: any = null;
+  private driverMarker?: L.Marker;
 
   private readonly STATUSES = [
     { key: 'pending',          label: 'Order Placed',      emoji: '📦' },
@@ -59,6 +63,10 @@ export class OrderTrackingComponent implements OnInit {
         this.trackOrder();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.driverPollInterval) clearInterval(this.driverPollInterval);
   }
 
   trackOrder(): void {
@@ -95,6 +103,7 @@ export class OrderTrackingComponent implements OnInit {
         this.isLoading.set(false);
         if (o.status === 'out_for_delivery') {
           setTimeout(() => this.initMap(), 100);
+          this.startDriverPolling(o.order_id);
         }
       },
       error: (err) => {
@@ -149,6 +158,56 @@ export class OrderTrackingComponent implements OnInit {
       }
       return { label: s.label, emoji: s.emoji, date, time, completed, current };
     });
+  }
+
+  /** Haversine distance in km */
+  private distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  /** Poll backend for driver's live GPS every 8 seconds */
+  startDriverPolling(orderId: number) {
+    if (this.driverPollInterval) clearInterval(this.driverPollInterval);
+
+    const poll = () => {
+      this.api.getOrderDriverLocation(orderId).subscribe({
+        next: (res) => {
+          const d = res.data;
+          if (!d?.locationAvailable || !d.lat || !d.lng) return;
+
+          this.driverLocation.set({ lat: d.lat, lng: d.lng, isStale: d.isStale ?? false });
+
+          // Update driver marker on map
+          if (this.driverMarker) {
+            this.driverMarker.setLatLng([d.lat, d.lng]);
+          }
+
+          // Calculate ETA to delivery address
+          const order = this.order();
+          // We have the geocoded delivery coords stored after initMap runs
+          const deliverCoords = (this as any)._deliveryCoords as [number, number] | undefined;
+          if (deliverCoords) {
+            const distKm = this.distanceKm(d.lat, d.lng, deliverCoords[0], deliverCoords[1]);
+            const etaMins = Math.round((distKm / 30) * 60); // 30 km/h avg rural speed
+            const earliest = new Date(Date.now() + (etaMins - 10) * 60000);
+            const latest = new Date(Date.now() + (etaMins + 15) * 60000);
+            this.etaWindow.set({
+              etaMins,
+              earliest: earliest.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+              latest: latest.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+            });
+          }
+        },
+        error: () => {}
+      });
+    };
+
+    poll();
+    this.driverPollInterval = setInterval(poll, 8000);
   }
 
   get progressPercent(): number {
@@ -248,85 +307,88 @@ export class OrderTrackingComponent implements OnInit {
       // use fallback offset from delivery address
     }
 
-    // --- Step 3: Initialize map ---
-    this.map = L.map(this.mapContainer.nativeElement).setView([deliveryLat, deliveryLng], 13);
+    // --- Step 3: Initialize map at delivery location ---
+    this.map = L.map(this.mapContainer.nativeElement).setView([deliveryLat, deliveryLng], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(this.map);
 
-    // --- Step 4: Custom markers ---
-    const driverIcon = L.divIcon({
-      className: '',
-      html: `<div style="background:#1a73e8;color:#fff;border-radius:50%;
-        width:40px;height:40px;display:flex;align-items:center;
-        justify-content:center;font-size:20px;
-        box-shadow:0 2px 8px rgba(26,115,232,0.5);border:3px solid #fff;">🛵</div>`,
-      iconSize: [40, 40], iconAnchor: [20, 20]
-    });
+    // Store delivery coords so driver polling can calculate ETA
+    (this as any)._deliveryCoords = [deliveryLat, deliveryLng];
+
+    // --- Step 4: Delivery address marker (always shown) ---
     const homeIcon = L.divIcon({
       className: '',
       html: `<div style="background:#ea4335;color:#fff;border-radius:50%;
-        width:40px;height:40px;display:flex;align-items:center;
+        width:42px;height:42px;display:flex;align-items:center;
         justify-content:center;font-size:20px;
-        box-shadow:0 2px 8px rgba(234,67,53,0.5);border:3px solid #fff;">🏠</div>`,
-      iconSize: [40, 40], iconAnchor: [20, 20]
+        box-shadow:0 3px 10px rgba(234,67,53,0.5);border:3px solid #fff;">🏠</div>`,
+      iconSize: [42, 42], iconAnchor: [21, 21]
     });
-
-    const driverMarker = L.marker([driverLat, driverLng], { icon: driverIcon })
-      .addTo(this.map).bindPopup('<b>🛵 Driver is on the way!</b>').openPopup();
-
     L.marker([deliveryLat, deliveryLng], { icon: homeIcon })
       .addTo(this.map)
-      .bindPopup(`<b>🏠 Delivery Address</b><br>${orderData?.delivery_address || ''}`);
+      .bindPopup(`<b>🏠 Your Delivery Address</b><br>${orderData?.delivery_address || ''}`);
 
-    // --- Step 5: Fetch OSRM real road route ---
+    // --- Step 5: Driver marker (uses real GPS if available, else offset) ---
+    const liveLoc = this.driverLocation();
+    const hasRealDriverLoc = liveLoc?.lat && liveLoc?.lng;
+    if (hasRealDriverLoc) {
+      driverLat = liveLoc!.lat;
+      driverLng = liveLoc!.lng;
+    }
+
+    const driverIcon = L.divIcon({
+      className: '',
+      html: `<div style="background:#1a73e8;color:#fff;border-radius:50%;
+        width:42px;height:42px;display:flex;align-items:center;
+        justify-content:center;font-size:20px;
+        box-shadow:0 3px 10px rgba(26,115,232,0.5);border:3px solid #fff;">🛵</div>`,
+      iconSize: [42, 42], iconAnchor: [21, 21]
+    });
+
+    // Store as class property so driver polling can update it
+    this.driverMarker = L.marker([driverLat, driverLng], { icon: driverIcon })
+      .addTo(this.map)
+      .bindPopup('<b>🛵 Driver is on the way!</b>')
+      .openPopup();
+
+    // --- Step 6: OSRM road route ---
     try {
       const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${deliveryLng},${deliveryLat}?overview=full&geometries=geojson`;
       const routeRes = await fetch(osrmUrl);
       const routeData = await routeRes.json();
 
-      if (routeData.routes && routeData.routes.length > 0) {
+      if (routeData.routes?.length > 0) {
         const coordinates: [number, number][] = routeData.routes[0].geometry.coordinates
           .map((c: number[]) => [c[1], c[0]] as [number, number]);
 
-        const routeLine = L.polyline(coordinates, {
-          color: '#1a73e8',
-          weight: 6,
-          opacity: 0.85,
-          lineJoin: 'round',
-          lineCap: 'round'
+        L.polyline(coordinates, {
+          color: '#1a73e8', weight: 6, opacity: 0.85, lineJoin: 'round', lineCap: 'round'
         }).addTo(this.map!);
 
-        this.map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+        this.map.fitBounds(L.latLngBounds(coordinates), { padding: [50, 50] });
 
-        // --- Step 6: Animate driver along real road (15 min simulation) ---
-        const totalPoints = coordinates.length;
-        const totalMs = 15 * 60 * 1000;
-        const intervalMs = 2000;
-        const pointsPerStep = totalPoints / (totalMs / intervalMs);
-        let progress = 0;
-
-        const animate = () => {
-          if (progress >= totalPoints - 1 || !this.map) {
-            driverMarker.setLatLng([deliveryLat, deliveryLng]);
-            return;
-          }
-          progress += pointsPerStep;
-          const idx = Math.min(Math.floor(progress), totalPoints - 1);
-          driverMarker.setLatLng(coordinates[idx]);
-          routeLine.setLatLngs(coordinates.slice(idx));
-          setTimeout(animate, intervalMs);
-        };
-        setTimeout(animate, 1000);
+        // Animate driver along road only if no real location available (simulation)
+        if (!hasRealDriverLoc) {
+          const totalPoints = coordinates.length;
+          const pointsPerStep = totalPoints / (15 * 60 * 1000 / 2000);
+          let progress = 0;
+          const animate = () => {
+            if (progress >= totalPoints - 1 || !this.map) return;
+            progress += pointsPerStep;
+            const idx = Math.min(Math.floor(progress), totalPoints - 1);
+            this.driverMarker?.setLatLng(coordinates[idx]);
+            setTimeout(animate, 2000);
+          };
+          setTimeout(animate, 1000);
+        }
       }
     } catch {
-      // Fallback straight line
-      const routeLine = L.polyline([[driverLat, driverLng], [deliveryLat, deliveryLng]], {
+      L.polyline([[driverLat, driverLng], [deliveryLat, deliveryLng]], {
         color: '#1a73e8', weight: 5, dashArray: '10, 8', opacity: 0.75
       }).addTo(this.map);
-      this.map.fitBounds(L.latLngBounds([[driverLat, driverLng], [deliveryLat, deliveryLng]]), { padding: [40, 40] });
+      this.map.fitBounds(L.latLngBounds([[driverLat, driverLng], [deliveryLat, deliveryLng]]), { padding: [50, 50] });
     }
   }
 }
-

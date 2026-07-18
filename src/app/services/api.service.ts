@@ -455,6 +455,23 @@ export class ApiService {
     return this.http.put<ApiResponse>(`${this.baseUrl}/delivery-runs/orders/${orderId}/status`, { status, deliveryOtp });
   }
 
+  /** Driver pushes their live GPS coords to the backend (called every 5s) */
+  updateDriverLocation(lat: number, lng: number): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.baseUrl}/delivery/location`, { lat, lng });
+  }
+
+  /** Customer polls driver's current location + ETA for their order */
+  getOrderDriverLocation(orderId: number): Observable<ApiResponse<{
+    driverAssigned: boolean;
+    locationAvailable: boolean;
+    lat?: number;
+    lng?: number;
+    updatedAt?: string;
+    isStale?: boolean;
+  }>> {
+    return this.http.get<ApiResponse<any>>(`${this.baseUrl}/delivery/orders/${orderId}/driver-location`);
+  }
+
   private normalizeProductsResponse(res: ApiResponse<{ products: Product[]; pagination: Pagination }>): ApiResponse<{ products: Product[]; pagination: Pagination }> {
     return {
       ...res,
