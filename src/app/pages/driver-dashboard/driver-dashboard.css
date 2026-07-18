@@ -1,257 +1,600 @@
-.driver-page {
-  padding: 1rem;
-  padding-bottom: 5rem;
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
+/* ═══════════════════════════════════════════════════════════
+   DRIVER APP — Standalone dark logistics theme
+   Completely independent from customer / seller CSS
+════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-.driver-header {
-  margin-bottom: 1.5rem;
-}
-
-.driver-header h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-}
-
-.driver-header p {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.btn-back {
-  background: #e2e8f0;
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #334155;
-}
-
-/* Runs List */
-.runs-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.run-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-
-.run-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.run-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-.status-pending { background: #fffbeb; color: #d97706; }
-
-.run-stops {
-  font-weight: 600;
-  color: #4338ca;
-  margin: 0.25rem 0;
-}
-
-.run-date {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  margin: 0;
-}
-
-.btn-start {
-  width: 100%;
-  margin-top: 1rem;
-  background: #4338ca;
-  color: white;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Map */
-.map-container-wrapper {
-  height: 250px;
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-  z-index: 1; /* Keep map behind overlay headers if any */
-}
-
-.leaflet-map {
-  height: 100%;
-  width: 100%;
-}
-
-/* Stops List */
-.stops-list h2 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.stop-card {
-  display: flex;
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-  align-items: center;
-  gap: 1rem;
-}
-
-.stop-sequence {
-  background: #eef2ff;
-  color: #4338ca;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.stop-info {
-  flex-grow: 1;
-}
-
-.stop-info h4 {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.9rem;
-}
-
-.stop-info p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #64748b;
-  line-height: 1.4;
-}
-
-.btn-deliver {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.badge-delivered {
-  color: #10b981;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.run-skeleton {
-  height: 120px;
+/* ── Reset for this page ── */
+.dapp, .dportal {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ══════════════════════════════════════════════
-   DRIVER PORTAL — LOGISTICS AUTH WALL
+   DRIVER APP (authenticated driver view)
 ══════════════════════════════════════════════ */
 
-.dl-portal-bg {
+.dapp {
   min-height: 100vh;
-  background: linear-gradient(135deg, #065f46 0%, #059669 60%, #10b981 100%);
+  background: #0d1117;
+  color: #e2e8f0;
   display: flex;
   flex-direction: column;
 }
 
-/* Top bar */
-.dl-portal-topbar {
+/* ── Top Nav ── */
+.dapp-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 32px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  background: rgba(0,0,0,0.2);
-  backdrop-filter: blur(8px);
-  flex-shrink: 0;
+  padding: 12px 20px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.dl-portal-topbar-brand {
+.dapp-logo {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.dl-portal-logo {
-  font-size: 22px;
-}
+.dapp-logo-icon { font-size: 22px; }
 
-.dl-portal-name {
-  font-size: 16px;
+.dapp-logo-name {
+  font-size: 15px;
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.3px;
+  display: block;
+  line-height: 1;
 }
 
-.dl-portal-sep {
-  color: rgba(255,255,255,0.2);
-  font-size: 18px;
-}
-
-.dl-portal-label {
-  font-size: 12px;
+.dapp-logo-tag {
+  font-size: 10px;
   font-weight: 700;
-  color: #a7f3d0;
+  color: #3b82f6;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  background: rgba(167,243,208,0.15);
-  padding: 3px 10px;
-  border-radius: 100px;
-  border: 1px solid rgba(167,243,208,0.3);
+  display: block;
 }
 
-.dl-portal-back-link {
+.dapp-gps-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 100px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dapp-gps-live { border-color: #22c55e40; color: #22c55e; background: #052e1640; }
+
+.dapp-gps-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: gps-pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes gps-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ── Body / List view ── */
+.dapp-body {
+  flex: 1;
+  padding: 20px 16px 100px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.dapp-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dapp-list-title {
+  font-size: clamp(20px, 5vw, 28px);
+  font-weight: 900;
+  color: #f1f5f9;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.dapp-list-sub {
   font-size: 13px;
-  color: rgba(255,255,255,0.6);
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+.dapp-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dapp-refresh-btn:hover { background: #273344; color: #e2e8f0; }
+
+/* ── Runs grid ── */
+.dapp-runs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 600px) {
+  .dapp-runs-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 900px) {
+  .dapp-runs-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Run Card ── */
+.dapp-run-card {
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dapp-run-card:hover {
+  border-color: #3b82f6;
+  background: #1a2235;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+}
+
+.dapp-run-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dapp-run-id {
+  font-size: 20px;
+  font-weight: 900;
+  color: #f1f5f9;
+  letter-spacing: -0.5px;
+}
+
+.dapp-run-hashtag { color: #3b82f6; }
+
+.dapp-run-status {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: 100px;
+  border: 1px solid;
+}
+
+.dapp-status-pending { background: #451a0320; color: #fb923c; border-color: #fb923c40; }
+.dapp-status-active  { background: #05260e20; color: #22c55e; border-color: #22c55e40; }
+
+.dapp-run-stops-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.dapp-run-addresses {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dapp-run-addr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.dapp-run-addr-num {
+  width: 20px;
+  height: 20px;
+  background: #ea4335;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.dapp-run-addr-txt { color: #94a3b8; line-height: 1.4; }
+
+.dapp-run-addr-more { font-size: 11px; color: #475569; font-style: italic; padding-left: 28px; }
+
+.dapp-run-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  border-top: 1px solid #21262d;
+  padding-top: 12px;
+}
+
+.dapp-run-date { font-size: 11px; color: #475569; }
+
+.dapp-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dapp-start-btn:hover { background: #2563eb; }
+
+/* ── Skeleton ── */
+.dapp-run-skeleton {
+  height: 220px;
+  background: linear-gradient(90deg, #161b22 25%, #1e2a3a 50%, #161b22 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 14px;
+  border: 1px solid #21262d;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Empty ── */
+.dapp-empty {
+  text-align: center;
+  padding: 64px 24px;
+}
+
+.dapp-empty-icon { font-size: 56px; margin-bottom: 16px; }
+.dapp-empty h3 { font-size: 18px; font-weight: 700; color: #e2e8f0; margin: 0 0 8px; }
+.dapp-empty p  { font-size: 14px; color: #64748b; line-height: 1.6; }
+
+/* ══════════════════════════════════════════════
+   ACTIVE RUN VIEW
+══════════════════════════════════════════════ */
+
+.dapp-run-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sub-header bar */
+.dapp-run-subbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+}
+
+.dapp-back-btn {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #94a3b8;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.dapp-back-btn:hover { background: #2d333b; color: #e2e8f0; }
+
+.dapp-run-subbar-info { flex: 1; }
+
+.dapp-run-subbar-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.3px;
+}
+
+.dapp-run-subbar-stops {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dapp-run-subbar-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.dapp-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: gps-pulse 1s ease-in-out infinite;
+}
+
+/* ── MAP — fills screen, responsive height ── */
+.dapp-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 45vh;
+  min-height: 260px;
+  max-height: 480px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .dapp-map-wrap {
+    height: 50vh;
+    max-height: 600px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dapp-run-view {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .dapp-map-wrap {
+    flex: 1.4;
+    height: calc(100vh - 120px);
+    max-height: none;
+    position: sticky;
+    top: 60px;
+    align-self: flex-start;
+  }
+  .dapp-stops-section {
+    flex: 1;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+}
+
+.dapp-leaflet-map {
+  width: 100%;
+  height: 100%;
+}
+
+.dapp-map-overlay-label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(13,17,23,0.8);
+  backdrop-filter: blur(6px);
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ── Stops Section ── */
+.dapp-stops-section {
+  padding: 16px;
+  background: #0d1117;
+}
+
+.dapp-stops-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.dapp-stops-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.dapp-stops-count {
+  font-size: 12px;
+  color: #64748b;
+  background: #161b22;
+  border: 1px solid #21262d;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+/* ── Stop Cards ── */
+.dapp-stops-list { display: flex; flex-direction: column; gap: 10px; }
+
+.dapp-stop-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 12px;
+  padding: 14px;
+  transition: border-color 0.2s;
+}
+
+.dapp-stop-card:hover { border-color: #334155; }
+
+.dapp-stop-delivered {
+  opacity: 0.5;
+  border-color: #22c55e20 !important;
+}
+
+.dapp-stop-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ea4335;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.dapp-stop-num-done { background: #22c55e; }
+
+.dapp-stop-body { flex: 1; min-width: 0; }
+
+.dapp-stop-order {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.dapp-stop-addr {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.dapp-stop-eta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.dapp-eta-icon { font-size: 11px; }
+
+.dapp-stop-action { flex-shrink: 0; margin-top: 2px; }
+
+.dapp-deliver-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.dapp-deliver-btn:hover { background: #059669; transform: scale(1.05); }
+
+.dapp-delivered-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #22c55e;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════════
+   DRIVER ONBOARDING PORTAL
+══════════════════════════════════════════════ */
+
+.dportal {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #0a1628 0%, #0d2137 40%, #0a2a1e 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.dportal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.dportal-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+}
+
+.dportal-brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.dportal-store-link {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
   text-decoration: none;
   transition: color 0.2s;
 }
-.dl-portal-back-link:hover { color: #fff; }
 
-/* Body: left info + right form */
-.dl-portal-body {
+.dportal-store-link:hover { color: #fff; }
+
+.dportal-hero {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -260,28 +603,19 @@
 }
 
 @media (min-width: 900px) {
-  .dl-portal-body {
-    flex-direction: row;
-  }
+  .dportal-hero { flex-direction: row; }
 }
 
-/* LEFT INFO PANEL */
-.dl-portal-info {
+.dportal-hero-content {
   flex: 1;
-  padding: 48px 40px;
+  padding: clamp(24px, 5vw, 64px);
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px;
   justify-content: center;
 }
 
-@media (max-width: 899px) {
-  .dl-portal-info {
-    padding: 32px 20px 16px;
-  }
-}
-
-.dl-portal-badge {
+.dportal-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -289,80 +623,54 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #a7f3d0;
-  background: rgba(167,243,208,0.15);
-  border: 1px solid rgba(167,243,208,0.3);
+  color: #6ee7b7;
+  background: rgba(110,231,183,0.1);
+  border: 1px solid rgba(110,231,183,0.25);
   border-radius: 100px;
   padding: 5px 14px;
   width: fit-content;
 }
 
-.dl-portal-title {
-  font-size: 38px;
+.dportal-hero-title {
+  font-size: clamp(28px, 6vw, 48px);
   font-weight: 900;
   color: #fff;
-  letter-spacing: -1px;
-  line-height: 1.15;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  margin: 0;
 }
 
-@media (max-width: 899px) {
-  .dl-portal-title { font-size: 26px; }
-}
-
-.dl-portal-sub {
+.dportal-hero-sub {
   font-size: 15px;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255,255,255,0.55);
   line-height: 1.7;
-  max-width: 420px;
+  max-width: 440px;
+  margin: 0;
 }
 
-/* Stats row */
-.dl-portal-stats {
+.dportal-stats-row {
   display: flex;
   align-items: center;
   gap: 0;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
   padding: 16px 24px;
   width: fit-content;
   max-width: 100%;
+  flex-wrap: wrap;
 }
 
-.dl-portal-stat {
-  text-align: center;
-  padding: 0 24px;
-}
+.dportal-stat { text-align: center; padding: 0 20px; }
+.dportal-stat:first-child { padding-left: 0; }
+.dportal-stat:last-child  { padding-right: 0; }
 
-.dl-portal-stat:first-child { padding-left: 0; }
-.dl-portal-stat:last-child  { padding-right: 0; }
+.dportal-stat-div { width: 1px; height: 32px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
 
-.dl-portal-stat-div {
-  width: 1px;
-  height: 36px;
-  background: rgba(255,255,255,0.15);
-}
+.dportal-stat-val { display: block; font-size: 20px; font-weight: 900; color: #6ee7b7; }
+.dportal-stat-lbl { display: block; font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
 
-.dl-portal-stat-val {
-  display: block;
-  font-size: 22px;
-  font-weight: 900;
-  color: #a7f3d0;
-  letter-spacing: -0.5px;
-}
-
-.dl-portal-stat-lbl {
-  display: block;
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-top: 3px;
-}
-
-/* Feature list */
-.dl-portal-features {
+.dportal-features {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -371,113 +679,115 @@
   gap: 16px;
 }
 
-.dl-portal-features li {
+.dportal-features li {
   display: flex;
   align-items: flex-start;
   gap: 14px;
 }
 
-.dl-pf-icon {
-  font-size: 18px;
+.dportal-feat-icon {
+  font-size: 20px;
   flex-shrink: 0;
   margin-top: 1px;
 }
 
-.dl-portal-features li div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dl-portal-features li strong {
+.dportal-features strong {
+  display: block;
   font-size: 14px;
-  color: rgba(255,255,255,0.95);
+  color: rgba(255,255,255,0.9);
   font-weight: 700;
+  margin-bottom: 3px;
 }
 
-.dl-portal-features li span {
-  font-size: 12px;
-  color: rgba(255,255,255,0.55);
+.dportal-features span {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.5;
 }
 
-/* RIGHT FORM PANEL */
-.dl-portal-form-wrap {
+.dportal-card-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 20px;
-  padding-bottom: calc(32px + var(--bottom-nav-h, 0px));
+  padding: clamp(24px, 5vw, 48px);
 }
 
 @media (min-width: 900px) {
-  .dl-portal-form-wrap {
-    width: 480px;
+  .dportal-card-wrap {
+    width: 440px;
     flex-shrink: 0;
-    padding: 40px 32px;
-    border-left: none;
-    min-height: calc(100vh - 60px);
     align-items: flex-start;
-    padding-top: 48px;
+    padding-top: 64px;
   }
 }
 
-.dl-portal-card {
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--surface-border, #e2e8f0);
-  border-radius: 16px;
-  padding: 28px 24px;
+.dportal-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 32px 28px;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-}
-
-.dl-portal-card-header {
-  margin-bottom: 20px;
-}
-
-.dl-portal-card-header h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-primary, #0f172a);
-  letter-spacing: -0.3px;
-  margin-bottom: 4px;
-}
-
-.dl-portal-card-header p {
-  font-size: 13px;
-  color: var(--text-secondary, #475569);
-}
-
-.dl-action-container {
+  max-width: 400px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 20px 0;
+  gap: 16px;
 }
 
-.dl-primary-btn {
-  width: 100%;
-  background: linear-gradient(135deg, #059669, #047857);
-  color: #fff;
-  border: none;
-  padding: 13px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+.dportal-card-icon { font-size: 40px; text-align: center; }
+.dportal-card-title { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; text-align: center; margin: 0; }
+.dportal-card-sub { font-size: 14px; color: rgba(255,255,255,0.45); text-align: center; line-height: 1.6; margin: 0; }
+
+.dportal-cta {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);
+  gap: 8px;
+  width: 100%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
 }
 
-.dl-primary-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+.dportal-cta:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+.dportal-cta:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dportal-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
 }
 
-.dl-primary-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.dportal-signin-note {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  margin: 0;
+}
+
+.dportal-card-features {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 14px;
+}
+
+.dportal-card-features span {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  font-weight: 500;
 }

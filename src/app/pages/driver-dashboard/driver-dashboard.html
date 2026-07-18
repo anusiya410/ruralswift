@@ -1,152 +1,277 @@
+<!-- ═══════════════════════════════════════════════════════════
+     DRIVER APP — Completely separate from customer/seller UI
+════════════════════════════════════════════════════════════ -->
+
 @if (isDriver()) {
-  <!-- ── DRIVER DASHBOARD ── -->
-  <div class="driver-page" id="page-driver-dashboard">
-    @if (!activeRun()) {
-      <!-- List View -->
-      <header class="driver-header">
-        <h1>My Delivery Runs</h1>
-        <p>Today's optimized routes</p>
-      </header>
 
-      @if (isLoading()) {
-        <div class="runs-list">
-          <div class="run-skeleton skeleton"></div>
-          <div class="run-skeleton skeleton"></div>
-        </div>
-      } @else if (runs().length === 0) {
-        <div class="empty-state">
-          <div class="empty-icon">🚚</div>
-          <h3>No active runs</h3>
-          <p>You don't have any deliveries assigned right now.</p>
-        </div>
-      } @else {
-        <div class="runs-list">
-          @for (run of runs(); track run.id) {
-            <div class="run-card">
-              <div class="run-header">
-                <h3>Run #{{ run.id }}</h3>
-                <span class="status-badge" [class.status-pending]="run.status === 'pending'">{{ run.status }}</span>
-              </div>
-              <p class="run-stops">{{ run.stops?.length || 0 }} Stops Assigned</p>
-              <p class="run-date">Created: {{ run.created_at | date:'short' }}</p>
-              <button class="btn-start" (click)="viewRun(run)">View Route</button>
-            </div>
-          }
-        </div>
-      }
-    } @else {
-      <!-- Detail View / Map -->
-      <header class="driver-header detail-header">
-        <button class="btn-back" (click)="backToList()">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-        </button>
-        <h1>Run #{{ activeRun().id }}</h1>
-      </header>
+  <div class="dapp" id="driver-app">
 
-      <div class="map-container-wrapper">
-        <div #map class="leaflet-map" id="delivery-map"></div>
+    <!-- ── TOP NAV BAR ── -->
+    <nav class="dapp-topbar">
+      <div class="dapp-topbar-left">
+        <div class="dapp-logo">
+          <span class="dapp-logo-icon">🛵</span>
+          <div>
+            <span class="dapp-logo-name">RuralSwift</span>
+            <span class="dapp-logo-tag">Driver</span>
+          </div>
+        </div>
       </div>
+      <div class="dapp-topbar-right">
+        <div class="dapp-gps-pill" [class.dapp-gps-live]="true">
+          <span class="dapp-gps-dot"></span>
+          <span>GPS Active</span>
+        </div>
+      </div>
+    </nav>
 
-      <div class="stops-list">
-        <h2>Optimized Sequence</h2>
-        @for (stop of activeRun().stops; track stop.order_id) {
-          <div class="stop-card">
-            <div class="stop-sequence">{{ stop.sequence }}</div>
-            <div class="stop-info">
-              <h4>Order #{{ stop.order_id }}</h4>
-              <p>{{ stop.address }}</p>
-            </div>
-            <div class="stop-actions">
-              @if (stop.status === 'delivered') {
-                <span class="badge-delivered">Delivered ✅</span>
-              } @else {
-                <button class="btn-deliver" (click)="markDelivered(stop.order_id)">Deliver</button>
-              }
-            </div>
+    <!-- ══════════════════════════
+         RUNS LIST VIEW
+    ══════════════════════════ -->
+    @if (!activeRun()) {
+
+      <div class="dapp-body">
+        <div class="dapp-list-header">
+          <div>
+            <h1 class="dapp-list-title">My Deliveries</h1>
+            <p class="dapp-list-sub">Today's optimized routes</p>
+          </div>
+          <button class="dapp-refresh-btn" (click)="loadRuns()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            Refresh
+          </button>
+        </div>
+
+        @if (isLoading()) {
+          <div class="dapp-runs-grid">
+            <div class="dapp-run-skeleton"></div>
+            <div class="dapp-run-skeleton"></div>
+            <div class="dapp-run-skeleton"></div>
+          </div>
+        } @else if (runs().length === 0) {
+          <div class="dapp-empty">
+            <div class="dapp-empty-icon">📦</div>
+            <h3>No active deliveries</h3>
+            <p>You don't have any runs assigned yet.<br>Check back soon!</p>
+          </div>
+        } @else {
+          <div class="dapp-runs-grid">
+            @for (run of runs(); track run.id) {
+              <div class="dapp-run-card" (click)="viewRun(run)">
+                <div class="dapp-run-card-top">
+                  <div class="dapp-run-id">
+                    <span class="dapp-run-hashtag">#</span>{{ run.id }}
+                  </div>
+                  <span class="dapp-run-status" [class.dapp-status-pending]="run.status === 'pending'" [class.dapp-status-active]="run.status === 'active'">
+                    {{ run.status }}
+                  </span>
+                </div>
+
+                <div class="dapp-run-stops-row">
+                  <span class="dapp-run-stops-icon">📍</span>
+                  <span class="dapp-run-stops-count">{{ run.stops?.length || 0 }} stops</span>
+                </div>
+
+                <div class="dapp-run-addresses">
+                  @for (stop of (run.stops || []).slice(0, 2); track stop.order_id) {
+                    <div class="dapp-run-addr-item">
+                      <span class="dapp-run-addr-num">{{ stop.sequence }}</span>
+                      <span class="dapp-run-addr-txt">{{ stop.address | slice:0:45 }}{{ stop.address?.length > 45 ? '…' : '' }}</span>
+                    </div>
+                  }
+                  @if ((run.stops?.length || 0) > 2) {
+                    <div class="dapp-run-addr-more">+{{ run.stops.length - 2 }} more stops</div>
+                  }
+                </div>
+
+                <div class="dapp-run-footer">
+                  <span class="dapp-run-date">{{ run.created_at | date:'d MMM, h:mm a' }}</span>
+                  <button class="dapp-start-btn">
+                    Start Run
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                  </button>
+                </div>
+              </div>
+            }
           </div>
         }
       </div>
-    }
-  </div>
-} @else {
-  <!-- ── DRIVER LANDING PORTAL ── -->
-  <div class="dl-portal-bg" id="driver-hub-auth">
-    <div class="dl-portal-topbar">
-      <div class="dl-portal-topbar-brand">
-        <span class="dl-portal-logo">🚚</span>
-        <span class="dl-portal-name">RuralSwift</span>
-        <span class="dl-portal-sep">|</span>
-        <span class="dl-portal-label">Logistics</span>
-      </div>
-      <a routerLink="/home" class="dl-portal-back-link">← Back to Store</a>
-    </div>
 
-    <div class="dl-portal-body">
-      <div class="dl-portal-info">
-        <div class="dl-portal-badge">📦 Last-Mile Network</div>
-        <h1 class="dl-portal-title">Deliver Smiles,<br/>Earn on Your Schedule</h1>
-        <p class="dl-portal-sub">
-          Join the RuralSwift Logistics network. Get mathematically optimized routes, real-time map navigation, and fast payouts.
-        </p>
+    } @else {
 
-        <div class="dl-portal-stats">
-          <div class="dl-portal-stat">
-            <span class="dl-portal-stat-val">Flexible</span>
-            <span class="dl-portal-stat-lbl">Working Hours</span>
+    <!-- ══════════════════════════
+         ACTIVE RUN / MAP VIEW
+    ══════════════════════════ -->
+      <div class="dapp-run-view">
+
+        <!-- Sub-header -->
+        <div class="dapp-run-subbar">
+          <button class="dapp-back-btn" (click)="backToList()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <div class="dapp-run-subbar-info">
+            <span class="dapp-run-subbar-title">Run #{{ activeRun().id }}</span>
+            <span class="dapp-run-subbar-stops">{{ activeRun().stops?.length || 0 }} stops</span>
           </div>
-          <div class="dl-portal-stat-div"></div>
-          <div class="dl-portal-stat">
-            <span class="dl-portal-stat-val">Weekly</span>
-            <span class="dl-portal-stat-lbl">Payouts</span>
+          <div class="dapp-run-subbar-live">
+            <span class="dapp-live-dot"></span>
+            <span>Live</span>
           </div>
         </div>
 
-        <ul class="dl-portal-features">
+        <!-- FULL MAP -->
+        <div class="dapp-map-wrap">
+          <div #map class="dapp-leaflet-map" id="delivery-map"></div>
+          <div class="dapp-map-overlay-label">
+            <span>🗺️ Live Route — OpenStreetMap</span>
+          </div>
+        </div>
+
+        <!-- STOP CARDS -->
+        <div class="dapp-stops-section">
+          <div class="dapp-stops-header">
+            <h2 class="dapp-stops-title">📋 Delivery Sequence</h2>
+            <span class="dapp-stops-count">{{ activeRun().stops?.length || 0 }} stops</span>
+          </div>
+
+          <div class="dapp-stops-list">
+            @for (stop of activeRun().stops; track stop.order_id; let i = $index) {
+              <div class="dapp-stop-card" [class.dapp-stop-delivered]="stop.status === 'delivered'">
+
+                <div class="dapp-stop-num" [class.dapp-stop-num-done]="stop.status === 'delivered'">
+                  @if (stop.status === 'delivered') {
+                    ✓
+                  } @else {
+                    {{ stop.sequence }}
+                  }
+                </div>
+
+                <div class="dapp-stop-body">
+                  <div class="dapp-stop-order">Order #{{ stop.order_id }}</div>
+                  <div class="dapp-stop-addr">{{ stop.address }}</div>
+                  @if (stopEtas()[i]) {
+                    <div class="dapp-stop-eta">
+                      <span class="dapp-eta-icon">⏱</span>
+                      <span>ETA: {{ stopEtas()[i] }}</span>
+                    </div>
+                  }
+                </div>
+
+                <div class="dapp-stop-action">
+                  @if (stop.status === 'delivered') {
+                    <div class="dapp-delivered-badge">
+                      <span>✅</span>
+                      <span>Done</span>
+                    </div>
+                  } @else {
+                    <button class="dapp-deliver-btn" (click)="markDelivered(stop.order_id)">
+                      <span>Deliver</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                  }
+                </div>
+
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+    }
+
+  </div>
+
+} @else {
+
+<!-- ═══════════════════════════════════════
+     DRIVER ONBOARDING PORTAL
+════════════════════════════════════════ -->
+  <div class="dportal" id="driver-hub-auth">
+
+    <div class="dportal-topbar">
+      <div class="dportal-brand">
+        <span>🛵</span>
+        <span class="dportal-brand-name">RuralSwift Logistics</span>
+      </div>
+      <a routerLink="/home" class="dportal-store-link">← Back to Store</a>
+    </div>
+
+    <div class="dportal-hero">
+      <div class="dportal-hero-content">
+        <div class="dportal-badge">📦 Last-Mile Network</div>
+        <h1 class="dportal-hero-title">Deliver Smiles,<br>Earn on Your Schedule</h1>
+        <p class="dportal-hero-sub">Join the RuralSwift Logistics network. Get AI-optimized routes, real-time GPS navigation, and fast weekly payouts.</p>
+
+        <div class="dportal-stats-row">
+          <div class="dportal-stat">
+            <span class="dportal-stat-val">Flexible</span>
+            <span class="dportal-stat-lbl">Hours</span>
+          </div>
+          <div class="dportal-stat-div"></div>
+          <div class="dportal-stat">
+            <span class="dportal-stat-val">Weekly</span>
+            <span class="dportal-stat-lbl">Payouts</span>
+          </div>
+          <div class="dportal-stat-div"></div>
+          <div class="dportal-stat">
+            <span class="dportal-stat-val">Smart</span>
+            <span class="dportal-stat-lbl">Routing</span>
+          </div>
+        </div>
+
+        <ul class="dportal-features">
           <li>
-            <span class="dl-pf-icon">📍</span>
+            <div class="dportal-feat-icon">📍</div>
             <div>
               <strong>Smart Routing</strong>
-              <span>Our AI calculates the fastest path to save your time and fuel.</span>
+              <span>Mathematically optimized delivery paths save time and fuel</span>
             </div>
           </li>
           <li>
-            <span class="dl-pf-icon">📱</span>
+            <div class="dportal-feat-icon">📱</div>
             <div>
-              <strong>In-App Maps</strong>
-              <span>Never get lost with integrated Leaflet navigation.</span>
+              <strong>Live Navigation</strong>
+              <span>Real-time GPS map with road-accurate routes to each stop</span>
             </div>
           </li>
           <li>
-            <span class="dl-pf-icon">🔒</span>
+            <div class="dportal-feat-icon">🔒</div>
             <div>
-              <strong>Secure OTP Deliveries</strong>
-              <span>Every delivery is verified securely for your protection.</span>
+              <strong>Secure OTP Delivery</strong>
+              <span>Every handoff is verified — no disputes, full protection</span>
             </div>
           </li>
         </ul>
       </div>
 
-      <div class="dl-portal-form-wrap">
-        <div class="dl-portal-card">
-          <div class="dl-portal-card-header">
-            <h2>Start Delivering Today</h2>
-            <p>Activate your Logistics profile instantly.</p>
-          </div>
-          <div class="dl-action-container">
-            @if (isAuthenticated()) {
-              <button class="dl-primary-btn" (click)="becomeDriver()" [disabled]="isUpgrading()">
-                {{ isUpgrading() ? 'Activating Profile...' : 'Activate Delivery Profile' }}
-              </button>
-            } @else {
-              <p style="margin-bottom: 20px; color: #475569; font-size: 14px;">You need a RuralSwift account before becoming a delivery partner.</p>
-              <a routerLink="/login" class="dl-primary-btn" style="text-decoration: none; text-align: center;">Sign In to Register</a>
-            }
+      <div class="dportal-card-wrap">
+        <div class="dportal-card">
+          <div class="dportal-card-icon">🛵</div>
+          <h2 class="dportal-card-title">Start Delivering Today</h2>
+          <p class="dportal-card-sub">Activate your Logistics profile instantly and start earning.</p>
+
+          @if (isAuthenticated()) {
+            <button class="dportal-cta" (click)="becomeDriver()" [disabled]="isUpgrading()">
+              @if (isUpgrading()) {
+                <span class="dportal-spinner"></span>
+                Activating...
+              } @else {
+                🚀 Activate Delivery Profile
+              }
+            </button>
+          } @else {
+            <p class="dportal-signin-note">You need a RuralSwift account first.</p>
+            <a routerLink="/login" class="dportal-cta" style="text-decoration:none;text-align:center;">Sign In to Register</a>
+          }
+
+          <div class="dportal-card-features">
+            <span>✅ Free to join</span>
+            <span>✅ Instant activation</span>
+            <span>✅ No minimum hours</span>
           </div>
         </div>
       </div>
     </div>
+
   </div>
 }
