@@ -176,54 +176,57 @@ export class OrderTrackingComponent implements OnInit {
   }
 
   async geocodeAddress(address: string): Promise<[number, number] | null> {
-    try {
-      // 1. Try full address
-      let query = encodeURIComponent(address);
-      let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
-      let data = await res.json();
-      
-      if (data && data.length > 0) {
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-      }
+    const headers = { 'Accept-Language': 'en' };
 
-      // 2. Fallback: Try extracting a 6-digit Indian PIN code
-      const pinMatch = address.match(/\b\d{6}\b/);
-      if (pinMatch) {
-        query = encodeURIComponent(`${pinMatch[0]}, India`);
-        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
-        data = await res.json();
+    const tryFetch = async (query: string): Promise<[number, number] | null> => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=1`,
+          { headers }
+        );
+        const data = await res.json();
         if (data && data.length > 0) {
           return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
         }
+      } catch (err) {
+        console.error('Geocoding attempt failed:', err);
       }
+      return null;
+    };
 
-      // 3. Fallback: Try just the last two words (usually city, state)
-      const parts = address.split(',').map(p => p.trim()).filter(p => p.length > 0);
-      if (parts.length >= 2) {
-        const shortAddress = parts.slice(-2).join(', ');
-        query = encodeURIComponent(shortAddress);
-        res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
-        data = await res.json();
-        if (data && data.length > 0) {
-          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        }
-      }
-
-    } catch (err) {
-      console.error('Geocoding failed', err);
+    // 1. Try PIN code first — most reliable for India
+    const pinMatch = address.match(/\b(\d{6})\b/);
+    if (pinMatch) {
+      const result = await tryFetch(`${pinMatch[1]}, India`);
+      if (result) return result;
     }
-    return null;
+
+    // 2. Try last 3 comma-parts (locality, city, state)
+    const parts = address.split(',').map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length >= 3) {
+      const result = await tryFetch(parts.slice(-3).join(', ') + ', India');
+      if (result) return result;
+    }
+
+    // 3. Try last 2 comma-parts (city, state)
+    if (parts.length >= 2) {
+      const result = await tryFetch(parts.slice(-2).join(', ') + ', India');
+      if (result) return result;
+    }
+
+    // 4. Full address as last resort
+    return tryFetch(address + ', India');
   }
 
   async initMap(): Promise<void> {
     if (!this.mapContainer) return;
     if (this.map) { this.map.remove(); }
-    
-    // Default to New Delhi
-    let baseLat = 28.6139;
-    let baseLng = 77.2090;
 
-    // Try to get real coordinates from the delivery address
+    // Start with India center — will zoom to real location after geocoding
+    let baseLat = 20.5937;
+    let baseLng = 78.9629;
+
+    // Geocode the real delivery address
     const orderData = this.order();
     if (orderData && orderData.delivery_address) {
       const coords = await this.geocodeAddress(orderData.delivery_address);

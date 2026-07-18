@@ -88,8 +88,8 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
 
   viewRun(run: any) {
     this.activeRun.set(run);
-    
-    // Wait a tick for the DOM to render the map container
+
+    // Wait a tick for the DOM to render the map container, then geocode & render
     setTimeout(() => {
       this.initMap(run);
     }, 100);
@@ -102,44 +102,97 @@ export class DriverDashboardComponent implements OnInit, AfterViewInit {
     }
   }
 
-  initMap(run: any) {
+  async geocodeIndianAddress(address: string): Promise<[number, number] | null> {
+    const headers = { 'Accept-Language': 'en' };
+
+    const tryFetch = async (query: string): Promise<[number, number] | null> => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=1`,
+          { headers }
+        );
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        }
+      } catch { /* ignore */ }
+      return null;
+    };
+
+    // 1. Try PIN code first (most reliable for India)
+    const pinMatch = address.match(/\b(\d{6})\b/);
+    if (pinMatch) {
+      const result = await tryFetch(`${pinMatch[1]}, India`);
+      if (result) return result;
+    }
+
+    // 2. Try last 3 parts (city, state, pin)
+    const parts = address.split(',').map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length >= 3) {
+      const result = await tryFetch(parts.slice(-3).join(', ') + ', India');
+      if (result) return result;
+    }
+
+    // 3. Try last 2 parts (city, state)
+    if (parts.length >= 2) {
+      const result = await tryFetch(parts.slice(-2).join(', ') + ', India');
+      if (result) return result;
+    }
+
+    // 4. Full address fallback
+    return tryFetch(address + ', India');
+  }
+
+  async initMap(run: any) {
     if (this.map) {
       this.map.remove();
     }
-    
-    // Initialize map
-    this.map = L.map(this.mapContainer.nativeElement).setView([28.6139, 77.2090], 12); // Default to Delhi
+
+    // Default to India center until geocoding resolves
+    this.map = L.map(this.mapContainer.nativeElement).setView([20.5937, 78.9629], 5);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);
 
     const stops = run.stops || [];
-    if (stops.length > 0) {
-      const latlngs: L.LatLngTuple[] = [];
-      
-      stops.forEach((stop: any, index: number) => {
-        // Mocking lat/lng based on the hub for now (in production, use real coordinates from the stop)
-        // Since we didn't send lat/lng to frontend in getDriverRuns, we'll visually mock it here 
-        // to show the map working. (In real app, backend sends the lat/long for each order)
-        const lat = 28.6139 + (Math.random() * 0.05 - 0.025);
-        const lng = 77.2090 + (Math.random() * 0.05 - 0.025);
-        latlngs.push([lat, lng]);
+    if (stops.length === 0) return;
 
-        L.marker([lat, lng])
-          .addTo(this.map)
-          .bindPopup(`<b>Stop ${index + 1}</b><br>${stop.address || 'Delivery Location'}`);
-      });
+    const latlngs: L.LatLngTuple[] = [];
 
-      // Draw route line
-      if (latlngs.length > 1) {
-        L.polyline(latlngs, { color: '#4338ca', weight: 4 }).addTo(this.map);
+    // Geocode each stop's real address
+    for (let index = 0; index < stops.length; index++) {
+      const stop = stops[index];
+      const address = stop.address || stop.delivery_address || '';
+      let lat: number;
+      let lng: number;
+
+      const coords = address ? await this.geocodeIndianAddress(address) : null;
+
+      if (coords) {
+        [lat, lng] = coords;
+      } else {
+        // Last resort: India center with slight offset
+        lat = 20.5937 + (index * 0.01);
+        lng = 78.9629 + (index * 0.01);
       }
 
-      // Fit map to markers
-      if (latlngs.length > 0) {
-        this.map.fitBounds(L.latLngBounds(latlngs));
-      }
+      latlngs.push([lat, lng]);
+
+      L.marker([lat, lng])
+        .addTo(this.map)
+        .bindPopup(`<b>Stop ${index + 1}</b><br>${address || 'Delivery Location'}`)
+        .openPopup();
+    }
+
+    // Draw route line
+    if (latlngs.length > 1) {
+      L.polyline(latlngs, { color: '#4338ca', weight: 4, lineJoin: 'round' }).addTo(this.map);
+    }
+
+    // Fit map to all markers
+    if (latlngs.length > 0) {
+      this.map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
     }
   }
 
