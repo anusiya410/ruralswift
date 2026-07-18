@@ -90,7 +90,7 @@ exports.getDrivers = async (req, res, next) => {
   try {
     const { pool } = require('../config/db');
     const { rows } = await pool.query(
-      `SELECT user_id, name, first_name, last_name, email, phone FROM users WHERE role = 'delivery'`
+      `SELECT user_id, name, email, phone FROM users WHERE role = 'delivery'`
     );
     sendSuccess(res, 200, 'Drivers fetched.', { data: { drivers: rows } });
   } catch (err) { next(err); }
