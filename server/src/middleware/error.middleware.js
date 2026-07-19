@@ -81,6 +81,11 @@ function errorHandler(err, req, res, next) {
     return sendError(res, 403, 'Invalid token.', ErrorCodes.AUTH_TOKEN_INVALID);
   }
 
+  // ── CORS error handling ──────────────────────────────────────────────────
+  if (err.message && err.message.includes('CORS:')) {
+    return sendError(res, 403, err.message, 'CORS_ERROR');
+  }
+
   // ── Generic fallback ──────────────────────────────────────────────────────
   return sendError(res, 500, 'Internal server error.', ErrorCodes.INTERNAL_ERROR);
 }

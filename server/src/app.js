@@ -35,6 +35,7 @@ const allowedOrigins = [
   'http://localhost:4200',
   'https://ruralshift-test.netlify.app',
   'https://ruralswift-1.vercel.app',
+  'https://ruralswift-venkat.vercel.app',
 ];
 
 app.use(cors({
@@ -42,6 +43,16 @@ app.use(cors({
     // Allow requests with no origin (curl, Postman, mobile apps)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    // Dynamically allow other Vercel or Netlify domains/subdomains for the project
+    if (
+      origin.endsWith('.vercel.app') || 
+      origin.endsWith('.netlify.app') ||
+      /^https?:\/\/localhost:\d+$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+    
     return callback(new Error(`CORS: origin "${origin}" not allowed.`), false);
   },
   methods:      ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

@@ -110,9 +110,16 @@ class UserService {
 
     if (hasSmtpConfig) {
       const dns = require('dns').promises;
+      const resolver = new dns.Resolver();
+      try {
+        resolver.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+      } catch (e) {
+        logger.warn('Could not set custom DNS servers', { error: e.message });
+      }
+      
       const domain = normalisedEmail.split('@')[1];
       try {
-        const mxRecords = await dns.resolveMx(domain);
+        const mxRecords = await resolver.resolveMx(domain);
         if (!mxRecords || mxRecords.length === 0) {
           const err = new Error('The email domain does not have valid mail server records (MX). Please use an active email.');
           err.status = 400;
@@ -122,10 +129,17 @@ class UserService {
         if (dnsErr.status === 400) {
           throw dnsErr;
         }
-        logger.warn('MX record lookup failed', { domain, error: dnsErr.message });
-        const err = new Error('The email domain is invalid or inactive. Please provide an active email.');
-        err.status = 400;
-        throw err;
+        
+        const definitiveCodes = ['ENOTFOUND', 'ENODATA'];
+        if (definitiveCodes.includes(dnsErr.code)) {
+          logger.warn('Email domain validation failed — domain not found or has no MX records', { domain, code: dnsErr.code });
+          const err = new Error('The email domain is invalid or inactive. Please provide an active email.');
+          err.status = 400;
+          throw err;
+        }
+        
+        // Bypassing network/system DNS errors to avoid breaking registrations when outbound DNS is blocked by environment
+        logger.warn('Email domain MX lookup bypassed due to DNS connection/system issue', { domain, error: dnsErr.message, code: dnsErr.code });
       }
     }
 
