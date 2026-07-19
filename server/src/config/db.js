@@ -15,7 +15,7 @@ const pool = new Pool({
   },
   max:                      5,
   idleTimeoutMillis:        60_000,   // 60s idle before releasing connection
-  connectionTimeoutMillis:  10_000,   // 10s to wait for NeonDB wake-up
+  connectionTimeoutMillis:  3000,     // 3s to wait for NeonDB wake-up (fail fast)
   statement_timeout:        5000,     // 5s max per query
   allowExitOnIdle:          true,
 });
@@ -57,13 +57,15 @@ pool.on('error', (err) => {
 })();
 
 // ── Exponential Backoff Retry Logic ──────────────────────────────────────────
-async function withRetry(operation, maxRetries = 3) {
+async function withRetry(operation, maxRetries = 2) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (err) {
-      // 40P01 = Deadlock, 40001 = Serialization failure, 57P01 = Admin shutdown, 57P03 = Cannot connect now
-      const isTransient = ['40P01', '40001', '57P01', '57P03'].includes(err.code) || err.message.includes('timeout');
+      // 40P01 = Deadlock, 40001 = Serialization failure
+      // Do NOT retry on connection failures or connection timeouts to prevent API hangs
+      const isTransient = ['40P01', '40001'].includes(err.code) || 
+                          (err.message.includes('timeout') && !err.message.includes('connection'));
       
       if (!isTransient || attempt === maxRetries) {
         const enriched = new Error(`[DB] ${err.message}`);
