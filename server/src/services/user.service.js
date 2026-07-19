@@ -119,7 +119,14 @@ class UserService {
       
       const domain = normalisedEmail.split('@')[1];
       try {
-        const mxRecords = await resolver.resolveMx(domain);
+        const dnsTimeout = new Promise((_, reject) => {
+          const t = setTimeout(() => reject(new Error('DNS timeout')), 3000);
+          t.unref?.(); // let node exit if this timer is active
+        });
+        const mxRecords = await Promise.race([
+          resolver.resolveMx(domain),
+          dnsTimeout
+        ]);
         if (!mxRecords || mxRecords.length === 0) {
           const err = new Error('The email domain does not have valid mail server records (MX). Please use an active email.');
           err.status = 400;
