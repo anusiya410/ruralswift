@@ -82,6 +82,11 @@ export interface Order {
   created_at:       string;
   delivered_at?:    string;
   delivery_otp?:    string;
+  // Seller location fields (for real ETA calculation)
+  seller_lat?:      number | null;
+  seller_lng?:      number | null;
+  seller_address?:  string;
+  seller_name?:     string;
 }
 
 export interface Address {
@@ -226,7 +231,7 @@ export class ApiService {
       `${this.baseUrl}/auth/register`,
       { ...data, email: data.email.trim().toLowerCase() }
     ).pipe(
-      timeout(30000) // 30s — prevents infinite hang if SMTP/DNS is slow
+      timeout(15000) // 15s — backend now responds instantly after DB write; email is fire-and-forget
     );
   }
 
@@ -407,8 +412,8 @@ export class ApiService {
     return this.http.put<ApiResponse<{ address: Address }>>(`${this.baseUrl}/addresses/${id}/default`, {});
   }
 
-  cancelOrder(id: number): Observable<ApiResponse> {
-    return this.http.put<ApiResponse>(`${this.baseUrl}/orders/${id}/cancel`, {});
+  cancelOrder(id: number): Observable<ApiResponse<{ order: Order }>> {
+    return this.http.post<ApiResponse<{ order: Order }>>(`${this.baseUrl}/orders/${id}/cancel`, {});
   }
 
   // ── Notifications ─────────────────────────────────────────────────────────
