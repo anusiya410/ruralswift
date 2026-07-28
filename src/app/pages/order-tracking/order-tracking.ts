@@ -10,6 +10,7 @@ import { ImageKitService } from '../../services/imagekit.service';
 import * as L from 'leaflet';
 
 interface TimelineStep {
+  key?:      string;
   label:     string;
   emoji:     string;
   date:      string;
@@ -43,6 +44,16 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
   public fastTrack       = signal<{ standard: number, optimized: number, saved: number, unit: string, distKm: number } | null>(null);
   public driverLocation  = signal<{ lat: number; lng: number; isStale: boolean } | null>(null);
   public etaWindow       = signal<{ earliest: string; latest: string; etaMins: number } | null>(null);
+
+  // Rate & Review state
+  public showReviewModal = signal(false);
+  public reviewProduct   = signal<any>(null);
+  public reviewRating    = signal(0);
+  public reviewTitle     = signal('');
+  public reviewBody      = signal('');
+  public reviewSubmitting = signal(false);
+  public reviewError     = signal('');
+  public reviewSuccess   = signal('');
 
   @ViewChild('trackingMap') mapContainer?: ElementRef;
   private map?: L.Map;
@@ -85,21 +96,6 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
         const o = res.data?.order;
         if (!o) { this.isLoading.set(false); this.error.set('Order not found.'); return; }
         
-        // --- RuralSwift FastTrack Optimization Logic ---
-        // For presentation: dynamically show how RuralSwift cuts down delivery time.
-        // We use the order.id to pseudo-randomly pick long, medium, or short distances.
-        const idVal = o.order_id || 1;
-        if (idVal % 3 === 0) {
-          // Simulate Long-Distance Village Delivery
-          this.fastTrack.set({ standard: 8, optimized: 5, saved: 3, unit: 'Days' });
-        } else if (idVal % 3 === 1) {
-          // Simulate Inter-city/District Delivery
-          this.fastTrack.set({ standard: 48, optimized: 24, saved: 24, unit: 'Hours' });
-        } else {
-          // Simulate Near/Local Village Delivery
-          this.fastTrack.set({ standard: 45, optimized: 20, saved: 25, unit: 'Mins' });
-        }
-        
         this.order.set(o);
         this.timeline.set(this.buildTimeline(o));
         this.isLoading.set(false);
@@ -128,8 +124,26 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
   /** Build the order status timeline steps */
   private buildTimeline(o: Order): TimelineStep[] {
     const rawStatus = o.status?.toLowerCase() ?? 'pending';
-    const currentIdx = this.STATUSES.findIndex(s => s.key === rawStatus);
     const base = new Date(o.created_at);
+
+    if (rawStatus === 'cancelled') {
+      return [
+        {
+          key: 'pending', label: 'Order Placed', emoji: '📦',
+          completed: true, current: false,
+          date: this.formatDate(o.created_at || ''),
+          time: new Date(o.created_at || '').toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          key: 'cancelled', label: 'Order Cancelled', emoji: '❌',
+          completed: true, current: true,
+          date: this.formatDate(o.cancelled_at || o.updated_at || ''),
+          time: new Date(o.cancelled_at || o.updated_at || '').toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        }
+      ];
+    }
+
+    const currentIdx = this.STATUSES.findIndex(s => s.key === rawStatus);
 
     return this.STATUSES.map((s, i) => {
       const completed = i <= currentIdx;
@@ -372,6 +386,7 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
 
   get progressPercent(): number {
     const t = this.timeline();
+    if (t.some(s => s.key === 'cancelled')) return 100;
     const last = [...t].reverse().findIndex(s => s.completed);
     const idx = last === -1 ? 0 : t.length - 1 - last;
     return Math.round((idx / (this.STATUSES.length - 1)) * 100);
@@ -584,20 +599,63 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
     this.error.set('');
 
     this.api.cancelOrder(o.order_id).subscribe({
-      next: (res) => {
+      next: () => {
         this.isCancelling.set(false);
-        // Refresh order to show updated status
-        const updated = res.data?.['order'] as Order | undefined;
-        if (updated) {
-          this.order.set(updated);
-          this.timeline.set(this.buildTimeline(updated));
-        } else {
-          this.trackOrder();
-        }
+        // Reload the full order to properly populate items array and trigger UI updates
+        this.trackOrder();
       },
       error: (err) => {
         this.isCancelling.set(false);
         this.error.set(err.error?.message || 'Failed to cancel order. Please try again.');
+      }
+    });
+  }
+
+  // --- Rate & Review logic ---
+  openReviewModal(product: any): void {
+    this.reviewProduct.set(product);
+    this.reviewRating.set(0);
+    this.reviewTitle.set('');
+    this.reviewBody.set('');
+    this.reviewError.set('');
+    this.reviewSuccess.set('');
+    this.showReviewModal.set(true);
+  }
+
+  closeReviewModal(): void {
+    this.showReviewModal.set(false);
+  }
+
+  setRating(stars: number): void {
+    this.reviewRating.set(stars);
+  }
+
+  submitReview(): void {
+    const p = this.reviewProduct();
+    const o = this.order();
+    if (!p || !o) return;
+    if (this.reviewRating() === 0) {
+      this.reviewError.set('Please select a rating.');
+      return;
+    }
+
+    this.reviewSubmitting.set(true);
+    this.reviewError.set('');
+
+    this.api.submitReview(p.product_id, {
+      rating: this.reviewRating(),
+      title: this.reviewTitle(),
+      body: this.reviewBody(),
+      order_id: o.order_id
+    }).subscribe({
+      next: () => {
+        this.reviewSubmitting.set(false);
+        this.reviewSuccess.set('Review submitted successfully!');
+        setTimeout(() => this.closeReviewModal(), 2000);
+      },
+      error: (err) => {
+        this.reviewSubmitting.set(false);
+        this.reviewError.set(err.error?.message || 'Failed to submit review.');
       }
     });
   }

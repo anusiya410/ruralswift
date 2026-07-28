@@ -81,6 +81,8 @@ export interface Order {
   items:            OrderItem[];
   created_at:       string;
   delivered_at?:    string;
+  cancelled_at?:    string;
+  updated_at?:      string;
   delivery_otp?:    string;
   // Seller location fields (for real ETA calculation)
   seller_lat?:      number | null;
@@ -414,6 +416,12 @@ export class ApiService {
 
   cancelOrder(id: number): Observable<ApiResponse<{ order: Order }>> {
     return this.http.post<ApiResponse<{ order: Order }>>(`${this.baseUrl}/orders/${id}/cancel`, {});
+  }
+
+  // ── Reviews ───────────────────────────────────────────────────────────────
+
+  submitReview(productId: number, data: { rating: number; title: string; body: string; order_id: number }): Observable<ApiResponse<{ review: any }>> {
+    return this.http.post<ApiResponse<{ review: any }>>(`${this.baseUrl}/products/${productId}/reviews`, data);
   }
 
   // ── Notifications ─────────────────────────────────────────────────────────
